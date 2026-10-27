@@ -4,6 +4,7 @@
 import {
   WebGLRenderer, BufferGeometry, BufferAttribute, PlaneGeometry, CanvasTexture,
   HemisphereLight, DirectionalLight, PointLight, SRGBColorSpace, ACESFilmicToneMapping,
+  PMREMGenerator, Scene, Mesh, SphereGeometry, MeshBasicMaterial, BackSide,
 } from '../vendor/three.custom.min.js';
 
 export const FONT = '"SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI Variable Display", "Segoe UI", Roboto, Arial, sans-serif';
@@ -167,13 +168,55 @@ export function dot(ctx, color, x, y, r) {
 
 /* ---------- lights ---------- */
 export function addLights(scene) {
-  const hemi = new HemisphereLight(0xffffff, 0xe5e0d8, 1.25);
-  const dir = new DirectionalLight(0xffffff, 2.1);
+  const hemi = new HemisphereLight(0xdff6ff, 0x1a1640, 0.7);
+  const dir = new DirectionalLight(0xffffff, 1.9);
   dir.position.set(-4, 6, 6);
-  const point = new PointLight(0x3c8f9c, 16, 0, 2);
+  const point = new PointLight(0x4cc3cf, 18, 0, 2);
   point.position.set(1.8, 1.2, 1.6);
-  scene.add(hemi, dir, point);
-  return { hemi, dir, point };
+  // violet rim from behind: outlines the bodies against the dark sky
+  const rim = new PointLight(0x8b6cff, 26, 0, 2);
+  rim.position.set(-2.4, 1.9, -2.8);
+  scene.add(hemi, dir, point, rim);
+  return { hemi, dir, point, rim };
+}
+
+// Procedural «nebula» environment, prefiltered once per renderer: metallic bodies reflect space.
+export function cosmicEnvironment(stage) {
+  if (stage.env) return stage.env;
+  const c = makeCanvas(512, 256);
+  const ctx = c.getContext('2d');
+  const sky = ctx.createLinearGradient(0, 0, 0, 256);
+  sky.addColorStop(0, '#0B0F2A');
+  sky.addColorStop(0.42, '#14324A');
+  sky.addColorStop(0.55, '#1E6F7A');
+  sky.addColorStop(0.7, '#0E1730');
+  sky.addColorStop(1, '#05070D');
+  ctx.fillStyle = sky;
+  ctx.fillRect(0, 0, 512, 256);
+  const blob = (x, y, r, color) => {
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, color);
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(x - r, y - r, r * 2, r * 2);
+  };
+  blob(120, 112, 96, 'rgba(76,195,207,.9)');
+  blob(380, 92, 120, 'rgba(140,90,220,.85)');
+  blob(262, 58, 34, 'rgba(255,255,255,.95)');
+  blob(40, 150, 60, 'rgba(110,86,220,.6)');
+  const tex = new CanvasTexture(c);
+  tex.colorSpace = SRGBColorSpace;
+  const scene = new Scene();
+  const sphere = new Mesh(new SphereGeometry(10, 32, 16), new MeshBasicMaterial({ map: tex, side: BackSide }));
+  scene.add(sphere);
+  const pmrem = new PMREMGenerator(stage.renderer);
+  stage.envTarget = pmrem.fromScene(scene, 0.02);
+  stage.env = stage.envTarget.texture;
+  sphere.geometry.dispose();
+  sphere.material.dispose();
+  tex.dispose();
+  pmrem.dispose();
+  return stage.env;
 }
 
 export function disposeAll(scene, textures = []) {
@@ -395,6 +438,11 @@ export function start({ hero, builder }, { forced = new URLSearchParams(location
 
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) stage.stop();
+    else stage.pick();
+  });
+  // A dialog (assistant, case, viewer) covers the page: no point drawing 3D underneath it.
+  document.addEventListener('xl:ui', () => {
+    if (document.documentElement.classList.contains('is-locked')) stage.stop();
     else stage.pick();
   });
 

@@ -19,3 +19,8 @@
 .doc ul li::before { content: ""; position: absolute; left: 4px; top: .7em; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
 .doc a { color: var(--accent); overflow-wrap: anywhere; }
 .doc .note { margin-top: 16px; padding: 14px 18px; border-radius: 12px; background: var(--accent-soft); font-size: .9375rem; }
+
+/* inside the in-site viewer: just the document */
+.is-embedded .header, .is-embedded .footer, .is-embedded .legal-back, .is-embedded .cookie, .is-embedded .skip-link { display: none !important; }
+.is-embedded .legal-top { padding-block: clamp(24px, 4vw, 48px); }
+.is-embedded body::after { display: none; }

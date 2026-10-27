@@ -94,80 +94,6 @@ export function renderFaq(categories) {
   body.append(...panels);
 }
 
-/* ---------- FAQ bot: honest scripted answers, not AI ---------- */
-function initBot(getData) {
-  const dlg = document.getElementById('bot');
-  const log = document.getElementById('bot-log');
-  const choices = document.getElementById('bot-choices');
-  if (!dlg || !log || !choices) return;
-  let started = false;
-  let pending = null;
-
-  const scrollDown = () => { log.scrollTop = log.scrollHeight; };
-
-  function say(text, who = 'bot') {
-    log.append(h('p', { class: `msg msg--${who}` }, text));
-    scrollDown();
-  }
-
-  function botReply(text, then) {
-    clearTimeout(pending);
-    choices.replaceChildren();
-    if (reduceMotion.matches) {
-      say(text);
-      then();
-      return;
-    }
-    const typing = h('p', { class: 'msg msg--bot msg--typing', 'aria-label': 'Печатает…' }, h('i'), h('i'), h('i'));
-    log.append(typing);
-    scrollDown();
-    pending = setTimeout(() => {
-      typing.remove();
-      say(text);
-      then();
-    }, 520);
-  }
-
-  function chip(label, onClick, extra = '') {
-    const b = h('button', { type: 'button', class: `chip ${extra}`.trim() }, label);
-    b.addEventListener('click', onClick);
-    return b;
-  }
-
-  function showTopics() {
-    const { categories } = getData();
-    choices.replaceChildren(...categories.map((c, i) => chip(c.title, () => openTopic(i))));
-  }
-
-  function openTopic(i) {
-    const cat = getData().categories[i];
-    if (!cat) return;
-    say(cat.title, 'user');
-    botReply('Выберите вопрос:', () => showQuestions(i));
-  }
-
-  function showQuestions(i, skip = -1) {
-    const cat = getData().categories[i];
-    const list = cat.items
-      .map((it, j) => (j === skip ? null : chip(it.q, () => answer(i, j))))
-      .filter(Boolean);
-    choices.replaceChildren(...list, chip('← Другие темы', () => { say('Другие темы', 'user'); botReply('Выберите тему:', showTopics); }, 'chip--back'));
-  }
-
-  function answer(i, j) {
-    const item = getData().categories[i].items[j];
-    say(item.q, 'user');
-    botReply(item.a, () => showQuestions(i, j));
-  }
-
-  dlg.addEventListener('xl:open', () => {
-    if (started) return;
-    started = true;
-    say(getData().greeting);
-    showTopics();
-  });
-}
-
 export function initFaq(contentPromise) {
   const tablist = document.getElementById('faq-tabs');
   const body = document.getElementById('faq-body');
@@ -175,18 +101,8 @@ export function initFaq(contentPromise) {
   initTabs(tablist);
   initAccordion(body);
 
-  let data = {
-    greeting: 'Здравствуйте! Здесь ответы на частые вопросы. Выберите тему — или сразу оставьте заявку.',
-    categories: readDom(),
-  };
   contentPromise.then((c) => {
     const cats = get(c, 'faq.categories');
-    if (valid(cats)) {
-      data.categories = cats;
-      renderFaq(cats);
-    }
-    const greeting = get(c, 'faq.botGreeting');
-    if (typeof greeting === 'string' && greeting) data.greeting = greeting;
+    if (valid(cats)) renderFaq(cats);
   });
-  initBot(() => data);
 }

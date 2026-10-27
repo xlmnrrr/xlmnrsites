@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Алекс Мирон — дизайн и digital-стратегия</title>
+<meta name="description" content="Спокойный дизайн и digital-стратегия для экспертов и небольших команд.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;1,9..144,300;1,9..144,400&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #faf8f5;
+  --surface: #ffffff;
+  --sand: #f1ede6;
+  --line: #e7e2da;
+  --text: #1d2427;
+  --muted: #6b7377;
+  --accent: #1e5a66;
+  --accent-soft: #e3eeef;
+  --radius: 24px;
+  --wrap: min(1240px, 100% - clamp(32px, 8vw, 128px));
+  --ease: cubic-bezier(.22, .8, .24, 1);
+  --shadow: 0 1px 2px rgba(29, 36, 39, .04), 0 24px 48px -24px rgba(30, 90, 102, .22);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: "Manrope", system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: clamp(15px, .88rem + .2vw, 18px);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+img { display: block; max-width: 100%; }
+a { color: inherit; text-decoration: none; }
+
+.wrap { width: var(--wrap); margin-inline: auto; }
+
+h1, h2, h3, blockquote { font-family: "Fraunces", Georgia, serif; font-weight: 300; letter-spacing: -.02em; }
+
+.label {
+  display: inline-block;
+  font-size: .75rem;
+  font-weight: 600;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.header { position: fixed; inset: 0 0 auto; z-index: 50; transition: background .4s, box-shadow .4s; background: rgba(250, 248, 245, .85); backdrop-filter: blur(12px); }
+.header__inner { display: flex; align-items: center; justify-content: space-between; height: 84px; }
+.logo { font-family: "Fraunces", serif; font-size: 1.35rem; font-weight: 400; }
+.logo i { font-style: italic; color: var(--accent); }
+
+.nav { display: flex; align-items: center; gap: clamp(24px, 3vw, 48px); }
+.nav a { font-size: .9rem; color: var(--muted); position: relative; transition: color .3s; }
+.nav a::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: -4px;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform .4s var(--ease);
+}
+.nav a:hover { color: var(--text); }
+.nav a:hover::after { transform: scaleX(1); transform-origin: left; }
+.nav .nav__cta { color: var(--accent); font-weight: 600; }
+
+.burger { display: none; width: 44px; height: 44px; border: 0; background: none; cursor: pointer; position: relative; }
+.burger::before, .burger::after {
+  content: "";
+  position: absolute;
+  left: 11px; right: 11px;
+  height: 1.5px;
+  background: var(--text);
+  transition: transform .4s var(--ease);
+}
+.burger::before { top: 18px; }
+.burger::after { top: 25px; }
+.burger.is-open::before { transform: translateY(3.5px) rotate(45deg); }
+.burger.is-open::after { transform: translateY(-3.5px) rotate(-45deg); }
+
+.hero { min-height: 100svh; display: flex; align-items: center; padding: 140px 0 100px; }
+.hero__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  font-size: .85rem;
+  color: var(--muted);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 100px;
+}
+.hero__status::before {
+  content: "";
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: #3a9a6a;
+  box-shadow: 0 0 0 0 rgba(58, 154, 106, .5);
+  animation: pulse 2.4s infinite;
+}
+.hero h1 {
+  font-size: clamp(2.6rem, 1rem + 6.5vw, 7.5rem);
+  line-height: 1.04;
+  margin: 36px 0 40px;
+}
+.word { display: inline-block; white-space: nowrap; }
+.ch {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(.25em);
+  filter: blur(8px);
+  animation: letter .7s var(--ease) forwards;
+  animation-delay: calc(var(--i) * 50ms + .3s);
+}
+.hero h1 .accent { font-style: italic; color: var(--accent); }
+.caret {
+  display: inline-block;
+  width: .06em;
+  height: .82em;
+  margin-left: .08em;
+  vertical-align: -.04em;
+  background: var(--accent);
+  opacity: 0;
+  animation: caret-in .01s 1.6s forwards, blink 1.1s 1.6s steps(1) infinite;
+}
+.hero__bottom { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 32px; }
+.hero__lead { max-width: 46ch; color: var(--muted); font-size: 1.1em; }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 30px;
+  font: 600 .95rem "Manrope", sans-serif;
+  color: #fff;
+  background: var(--accent);
+  border: 0;
+  border-radius: 100px;
+  cursor: pointer;
+  transition: transform .4s var(--ease), box-shadow .4s var(--ease);
+}
+.btn::after { content: "→"; transition: transform .4s var(--ease); }
+.btn:hover { transform: translateY(-2px); box-shadow: 0 16px 32px -12px rgba(30, 90, 102, .5); }
+.btn:hover::after { transform: translateX(4px); }
+
+.section { padding: clamp(80px, 12vw, 180px) 0; }
+.section__head { max-width: 720px; margin-bottom: clamp(48px, 6vw, 88px); }
+.section__head h2 { font-size: clamp(2rem, 1rem + 3.4vw, 4rem); line-height: 1.1; margin-top: 18px; }
+.section__head h2 i { color: var(--accent); }
+
+.bento {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-auto-rows: minmax(240px, auto);
+  gap: 20px;
+}
+.tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 32px;
+  padding: clamp(28px, 3vw, 44px);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  transition: box-shadow .6s var(--ease), transform .6s var(--ease), border-color .6s;
+}
+.tile:hover { box-shadow: var(--shadow); transform: translateY(-4px); border-color: transparent; }
+.tile--wide { grid-column: span 2; }
+.tile--tall { grid-row: span 2; }
+.tile--accent { background: var(--accent); color: #fff; border-color: var(--accent); }
+.tile.tile--accent p, .tile--accent .tile__num { color: rgba(255, 255, 255, .72); }
+.tile--sand { background: var(--sand); }
+.tile--photo { padding: 0; }
+.tile--photo img { width: 100%; height: 100%; object-fit: cover; transition: transform 1s var(--ease); }
+.tile--photo:hover img { transform: scale(1.04); }
+.tile__num { font-size: .8rem; color: var(--muted); letter-spacing: .1em; }
+.tile h3 { font-size: clamp(1.5rem, 1rem + 1vw, 2.1rem); line-height: 1.15; margin-bottom: 12px; }
+.tile p { color: var(--muted); max-width: 40ch; }
+.tile__price { font-family: "Fraunces", serif; font-size: 1.1rem; }
+.tile--accent .tile__price { color: #fff; }
+.tile__big { font-family: "Fraunces", serif; font-size: clamp(3.5rem, 2rem + 4vw, 6rem); font-weight: 300; line-height: 1; color: var(--accent); }
+
+.reviews { background: var(--sand); }
+.reviews__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: 20px;
+}
+.review {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 40px;
+  padding: clamp(28px, 3vw, 44px);
+  background: var(--bg);
+  border-radius: var(--radius);
+  transition: box-shadow .6s var(--ease), transform .6s var(--ease);
+}
+.review:hover { box-shadow: var(--shadow); transform: translateY(-4px); }
+.review blockquote { font-size: clamp(1.15rem, 1rem + .4vw, 1.4rem); line-height: 1.45; }
+.review blockquote::before { content: "“"; display: block; font-size: 3em; line-height: .6; color: var(--accent); margin-bottom: 8px; }
+.review__author { display: flex; align-items: center; gap: 14px; }
+.review__avatar {
+  width: 48px; height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-weight: 600;
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.review__author strong { display: block; font-weight: 600; }
+.review__author span { font-size: .85rem; color: var(--muted); }
+
+.contact__box {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: clamp(40px, 6vw, 96px);
+  align-items: end;
+}
+.contact h2 { font-size: clamp(2.4rem, 1rem + 5vw, 6rem); line-height: 1.02; margin-top: 18px; }
+.contact h2 i { color: var(--accent); }
+.contact__mail {
+  display: inline-block;
+  margin-top: 40px;
+  font-family: "Fraunces", serif;
+  font-size: clamp(1.3rem, 1rem + 1.4vw, 2.2rem);
+  color: var(--accent);
+  border-bottom: 1px solid currentColor;
+  transition: opacity .3s;
+}
+.contact__mail:hover { opacity: .7; }
+.contact__links { list-style: none; display: grid; }
+.contact__links a {
+  display: flex;
+  justify-content: space-between;
+  padding: 20px 0;
+  border-bottom: 1px solid var(--line);
+  transition: color .3s, padding .5s var(--ease);
+}
+.contact__links li:first-child a { border-top: 1px solid var(--line); }
+.contact__links a::after { content: "↗"; color: var(--muted); }
+.contact__links a:hover { color: var(--accent); padding-left: 8px; }
+
+.footer { padding: 40px 0; font-size: .85rem; color: var(--muted); }
+.footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; border-top: 1px solid var(--line); padding-top: 32px; }
+
+.reveal { opacity: 0; }
+.reveal.is-visible { opacity: 1; animation: reveal 1.1s var(--ease) var(--d, 0s) backwards; }
+
+@keyframes reveal { from { opacity: 0; transform: translateY(32px); } }
+@keyframes letter { to { opacity: 1; transform: none; filter: blur(0); } }
+@keyframes caret-in { to { opacity: 1; } }
+@keyframes blink { 50% { opacity: 0; } }
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(58, 154, 106, .45); }
+  70% { box-shadow: 0 0 0 10px rgba(58, 154, 106, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(58, 154, 106, 0); }
+}
+
+@media (max-width: 1024px) {
+  .bento { grid-template-columns: repeat(2, 1fr); }
+  .tile--tall { grid-row: span 1; }
+  .contact__box { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 760px) {
+  .burger { display: block; }
+  .nav {
+    position: fixed;
+    inset: 84px 0 auto;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    padding: 16px 24px 32px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--line);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-12px);
+    transition: opacity .4s var(--ease), transform .4s var(--ease), visibility .4s;
+  }
+  .nav.is-open { opacity: 1; visibility: visible; transform: none; }
+  .nav a { font-size: 1.2rem; padding: 10px 0; }
+}
+
+@media (max-width: 600px) {
+  .bento { grid-template-columns: 1fr; grid-auto-rows: auto; }
+  .tile--wide { grid-column: span 1; }
+  .tile--photo { aspect-ratio: 4 / 3; }
+  .btn { width: 100%; justify-content: center; }
+}
+
+@media (min-width: 2200px) {
+  :root { --wrap: min(1760px, 100% - 256px); }
+  body { font-size: 20px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0s !important; transition-duration: .01ms !important; }
+  .reveal { opacity: 1; }
+}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="wrap header__inner">
+    <a href="#top" class="logo">Алекс <i>Мирон</i></a>
+    <nav class="nav" id="nav">
+      <a href="#services">Услуги</a>
+      <a href="#reviews">Отзывы</a>
+      <a href="#contact" class="nav__cta">Связаться</a>
+    </nav>
+    <button class="burger" id="burger" aria-label="Открыть меню" aria-expanded="false" aria-controls="nav"></button>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero">
+    <div class="wrap">
+      <span class="hero__status">Открыта запись на ноябрь</span>
+      <h1 aria-label="Тихий дизайн для громких идей.">
+        <span aria-hidden="true">
+          <span class="word"><span class="ch" style="--i:0">Т</span><span class="ch" style="--i:1">и</span><span class="ch" style="--i:2">х</span><span class="ch" style="--i:3">и</span><span class="ch" style="--i:4">й</span></span>
+          <span class="word"><span class="ch" style="--i:5">д</span><span class="ch" style="--i:6">и</span><span class="ch" style="--i:7">з</span><span class="ch" style="--i:8">а</span><span class="ch" style="--i:9">й</span><span class="ch" style="--i:10">н</span></span><br>
+          <span class="word"><span class="ch" style="--i:11">д</span><span class="ch" style="--i:12">л</span><span class="ch" style="--i:13">я</span></span>
+          <span class="word"><span class="ch" style="--i:14">г</span><span class="ch" style="--i:15">р</span><span class="ch" style="--i:16">о</span><span class="ch" style="--i:17">м</span><span class="ch" style="--i:18">к</span><span class="ch" style="--i:19">и</span><span class="ch" style="--i:20">х</span></span>
+          <span class="word accent"><span class="ch" style="--i:21">и</span><span class="ch" style="--i:22">д</span><span class="ch" style="--i:23">е</span><span class="ch" style="--i:24">й</span><span class="ch" style="--i:25">.</span><span class="caret"></span></span>
+        </span>
+      </h1>
+      <div class="hero__bottom">
+        <p class="hero__lead reveal" style="--d:1.2s">Помогаю экспертам и небольшим командам говорить о себе ясно: стратегия, айдентика и сайты без лишнего шума.</p>
+        <a href="#contact" class="btn reveal" style="--d:1.35s">Обсудить проект</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="services">
+    <div class="wrap">
+      <div class="section__head reveal">
+        <span class="label">Услуги</span>
+        <h2>Делаю немного, <i>но очень внимательно</i></h2>
+      </div>
+      <div class="bento">
+        <article class="tile tile--wide tile--accent reveal">
+          <span class="tile__num">01</span>
+          <div>
+            <h3>Стратегия личного бренда</h3>
+            <p>Позиционирование, тон голоса и карта коммуникаций. Понимаем, кто вы и почему выбирают вас.</p>
+          </div>
+          <span class="tile__price">от 90 000 ₽</span>
+        </article>
+        <article class="tile tile--tall tile--photo reveal" style="--d:.1s">
+          <img src="https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80" alt="Светлое рабочее пространство" loading="lazy">
+        </article>
+        <article class="tile reveal" style="--d:.2s">
+          <span class="tile__num">02</span>
+          <div>
+            <h3>Сайты</h3>
+            <p>Лендинги и портфолио, которые читаются за минуту.</p>
+          </div>
+          <span class="tile__price">от 120 000 ₽</span>
+        </article>
+        <article class="tile tile--sand reveal">
+          <span class="tile__big">8</span>
+          <p>лет в дизайне и digital-коммуникациях</p>
+        </article>
+        <article class="tile reveal" style="--d:.1s">
+          <span class="tile__num">03</span>
+          <div>
+            <h3>Айдентика</h3>
+            <p>Логотип, шрифты, цвет и простой гайд.</p>
+          </div>
+          <span class="tile__price">от 70 000 ₽</span>
+        </article>
+        <article class="tile tile--wide reveal" style="--d:.2s">
+          <span class="tile__num">04</span>
+          <div>
+            <h3>Консультация и аудит</h3>
+            <p>Разбираем сайт, соцсети и упаковку за одну встречу. Вы получаете список конкретных правок по приоритету.</p>
+          </div>
+          <span class="tile__price">15 000 ₽ / 90 минут</span>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section reviews" id="reviews">
+    <div class="wrap">
+      <div class="section__head reveal">
+        <span class="label">Отзывы</span>
+        <h2>Что говорят <i>после проекта</i></h2>
+      </div>
+      <div class="reviews__grid">
+        <figure class="review reveal">
+          <blockquote>Впервые сайт объясняет, чем я занимаюсь, лучше, чем я сама на встрече. Заявок стало вдвое больше.</blockquote>
+          <figcaption class="review__author">
+            <span class="review__avatar">ЕС</span>
+            <div><strong>Екатерина С.</strong><span>психолог, частная практика</span></div>
+          </figcaption>
+        </figure>
+        <figure class="review reveal" style="--d:.12s">
+          <blockquote>Спокойный процесс, понятные сроки и ни одного лишнего созвона. Результат выглядит дороже, чем стоил.</blockquote>
+          <figcaption class="review__author">
+            <span class="review__avatar">ДК</span>
+            <div><strong>Дмитрий К.</strong><span>основатель студии мебели</span></div>
+          </figcaption>
+        </figure>
+        <figure class="review reveal" style="--d:.24s">
+          <blockquote>Стратегическая сессия расставила всё по местам. Теперь каждый пост и каждая страница работают на одну идею.</blockquote>
+          <figcaption class="review__author">
+            <span class="review__avatar">МВ</span>
+            <div><strong>Марина В.</strong><span>бизнес-тренер</span></div>
+          </figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="section contact" id="contact">
+    <div class="wrap contact__box">
+      <div class="reveal">
+        <span class="label">Контакты</span>
+        <h2>Расскажите <i>о задаче</i></h2>
+        <a href="mailto:hello@miron.example" class="contact__mail">hello@miron.example</a>
+      </div>
+      <ul class="contact__links reveal" style="--d:.15s">
+        <li><a href="#">Telegram</a></li>
+        <li><a href="#">Behance</a></li>
+        <li><a href="#">LinkedIn</a></li>
+        <li><a href="#">Резюме, PDF</a></li>
+      </ul>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="wrap">
+    <span>© 2026 Алекс Мирон. Демо-проект.</span>
+    <span>Сделано без лишнего шума</span>
+  </div>
+</footer>
+
+<script>
+const burger = document.getElementById('burger');
+const nav = document.getElementById('nav');
+
+const toggleMenu = (open) => {
+  burger.classList.toggle('is-open', open);
+  nav.classList.toggle('is-open', open);
+  burger.setAttribute('aria-expanded', open);
+};
+
+burger.addEventListener('click', () => toggleMenu(!nav.classList.contains('is-open')));
+nav.querySelectorAll('a').forEach((link) => link.addEventListener('click', () => toggleMenu(false)));
+
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach((entry) => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('is-visible');
+      observer.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+
+document.querySelectorAll('.reveal').forEach((el) => observer.observe(el));
+</script>
+</body>
+</html>

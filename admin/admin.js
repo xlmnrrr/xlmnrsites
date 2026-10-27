@@ -1,6 +1,9 @@
 // Content editor: reads/writes data/content.json through the GitHub Contents API.
 // The PAT lives only in this browser (localStorage or sessionStorage) and is sent only to api.github.com.
 import { h } from '../assets/js/content.js';
+import { initLogos } from '../assets/js/logo.js';
+
+initLogos();
 
 const REPO = 'xlmnrrr/xlmnrsites';
 const PATH = 'data/content.json';
@@ -17,7 +20,7 @@ const LABELS = {
   ctaSecondary: 'Вторая кнопка', note: 'Примечание', services: 'Услуги', kicker: 'Метка раздела', lead: 'Вводный текст',
   items: 'Элементы', icon: 'Иконка (landing / corporate / refine / support)', text: 'Текст', bullets: 'Пункты', price: 'Стоимость',
   term: 'Сроки', service: 'Название услуги для заявки', process: 'Как работаю', cases: 'Кейсы', badge: 'Плашка',
-  image: 'Картинка (путь assets/img/…)', type: 'Тип', details: 'Что входит', advantages: 'Преимущества', numbers: 'Цифры',
+  image: 'Картинка (путь assets/img/…)', url: 'Ссылка на пример (examples/…/index.html или https://…)', type: 'Тип', details: 'Что входит', advantages: 'Преимущества', numbers: 'Цифры',
   enabled: 'Показывать блок', value: 'Значение', label: 'Подпись', form: 'Форма заявки', submit: 'Текст кнопки',
   success: 'Сообщение об успехе', errorTitle: 'Заголовок ошибки', errorText: 'Текст ошибки', faq: 'Вопросы и ответы',
   botGreeting: 'Приветствие помощника', botNote: 'Пометка помощника', categories: 'Темы', q: 'Вопрос', a: 'Ответ',
@@ -135,6 +138,7 @@ function validate(data) {
   if (!/^mailto:[^\s<>"]+$/.test(data.contacts.emailLink || '')) errors.push('Ссылка на email должна быть вида mailto:адрес.');
   (data.cases?.items || []).forEach((c, i) => {
     if (c.image && !SAFE_IMG.test(c.image)) errors.push(`Кейс ${i + 1}: картинка должна лежать в assets/img/…`);
+    if (c.url && !/^((\.?\/)?examples\/[\w\-/]+(\.html|\/)|https:\/\/[^\s<>"]+)$/.test(c.url)) errors.push(`Кейс ${i + 1}: ссылка должна вести на examples/… или начинаться с https://`);
   });
   const json = JSON.stringify(data);
   if (SECRET.test(json)) errors.push('Похоже, в тексте есть токен или ключ. Секреты нельзя хранить в content.json — он публичный.');

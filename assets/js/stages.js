@@ -64,9 +64,12 @@ export function initStages() {
   initBuilderFallback(builder);
   if (!hero || !canRun3D()) return;
 
-  const start = () => import('./three-kit.js')
-    .then((kit) => kit.start({ hero, builder }))
-    .catch((err) => console.warn('[3d] disabled:', err));
+  const start = () => {
+    import('./stars.js').then((m) => m.initStars(document.querySelector('.hero__bg'))).catch(() => {});
+    import('./three-kit.js')
+      .then((kit) => kit.start({ hero, builder }))
+      .catch((err) => console.warn('[3d] disabled:', err));
+  };
   const idle = (cb) => ('requestIdleCallback' in window ? requestIdleCallback(cb, { timeout: 2000 }) : setTimeout(cb, 300));
   if (document.readyState === 'complete') idle(start);
   else window.addEventListener('load', () => idle(start), { once: true });

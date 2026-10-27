@@ -2,11 +2,11 @@
 // a cursor that clicks the CTA and a «Заявка отправлена» toast. No external assets.
 import {
   Scene, PerspectiveCamera, Group, Mesh, PlaneGeometry, CylinderGeometry,
-  MeshStandardMaterial, MeshBasicMaterial,
+  MeshStandardMaterial, MeshBasicMaterial, Sprite, SpriteMaterial, Vector3, BoxGeometry,
 } from '../vendor/three.custom.min.js';
 import {
   C, FONT, MONO, roundedSlab, prism, atlasPlane, makeCanvas, canvasTexture,
-  fillRR, strokeRR, dot, addLights, disposeAll, ease, clamp01,
+  fillRR, strokeRR, dot, addLights, cosmicEnvironment, disposeAll, ease, clamp01,
 } from './three-kit.js';
 
 const TAU = Math.PI * 2;
@@ -16,6 +16,24 @@ const px2 = (x, y) => [(x / SCREEN.tw - 0.5) * SCREEN.w, (0.5 - y / SCREEN.th) *
 const CTA_PX = { x: 48, y: 346, w: 214, h: 54 };
 const STRIP_PX = { x: 44, y: 208, w: 512, h: 64 };
 const PHRASES = ['в интернете', 'на любом экране', 'с понятной заявкой'];
+const COMET = { period: 9, tail: 26, lag: 0.028 };
+
+// Comet orbit around the window stack (rig space): tilted ellipse that passes in front of and behind the windows.
+function cometAt(t, out) {
+  const a = (t / COMET.period) * Math.PI * 2 + 2.94; // phase: in front of the stack on the poster frame (t = 6)
+  // radii keep head and tail inside the canvas on every side, including near the camera
+  return out.set(Math.cos(a) * 2.45, 0.25 + Math.sin(a) * 0.6 + Math.cos(a * 2) * 0.1, Math.sin(a) * 1.55 - 0.5);
+}
+
+function drawGlow(ctx) {
+  const g = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+  g.addColorStop(0, 'rgba(255,255,255,1)');
+  g.addColorStop(0.18, 'rgba(220,250,252,.95)');
+  g.addColorStop(0.4, 'rgba(125,217,226,.45)');
+  g.addColorStop(1, 'rgba(125,217,226,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, 64, 64);
+}
 
 /* ---------- textures ---------- */
 function chrome(ctx, w, s) {
@@ -260,9 +278,9 @@ function drawChips(ctx) {
   ctx.translate(256, 416);
   ctx.scale(1, 0.36);
   const sg = ctx.createRadialGradient(0, 0, 0, 0, 0, 252);
-  sg.addColorStop(0, 'rgba(22,24,27,.26)');
-  sg.addColorStop(0.55, 'rgba(22,24,27,.08)');
-  sg.addColorStop(1, 'rgba(22,24,27,0)');
+  sg.addColorStop(0, 'rgba(76,195,207,.34)');
+  sg.addColorStop(0.5, 'rgba(110,86,220,.12)');
+  sg.addColorStop(1, 'rgba(110,86,220,0)');
   ctx.fillStyle = sg;
   ctx.fillRect(-256, -266, 512, 532);
   ctx.restore();
@@ -308,6 +326,7 @@ export function createHero(stage, { fixedTime = null } = {}) {
     camera.position.set(0, 0.55, 8.6);
     camera.lookAt(0.1, -0.05, -0.3);
     const lights = addLights(scene);
+    scene.environment = cosmicEnvironment(stage);
 
     const textures = [];
     const tex = (canvas) => { const t = canvasTexture(canvas, stage); textures.push(t); return t; };
@@ -331,13 +350,13 @@ export function createHero(stage, { fixedTime = null } = {}) {
     const sctx = stripCanvas.getContext('2d');
     const stripTex = tex(stripCanvas);
 
-    const bodyMat = new MeshStandardMaterial({ color: C.body, metalness: 0.25, roughness: 0.45 });
-    const whiteMat = new MeshStandardMaterial({ color: '#FBFAF8', metalness: 0.2, roughness: 0.4 });
-    const darkMat = new MeshStandardMaterial({ color: C.text, metalness: 0.3, roughness: 0.35 });
-    const accentMat = new MeshStandardMaterial({ color: C.accent, metalness: 0.2, roughness: 0.4 });
-    const sandMat = new MeshStandardMaterial({ color: '#CDBFA6', metalness: 0.1, roughness: 0.5 });
-    const glassMat = new MeshStandardMaterial({ color: '#FFFFFF', metalness: 0, roughness: 0.1, transparent: true, opacity: 0.16, depthWrite: false });
-    const glowMat = new MeshBasicMaterial({ color: C.accentLight, transparent: true, opacity: 0.22, depthWrite: false, toneMapped: false });
+    const bodyMat = new MeshStandardMaterial({ color: '#E9EEF2', metalness: 0.5, roughness: 0.28, envMapIntensity: 1.1 });
+    const whiteMat = new MeshStandardMaterial({ color: '#F6F8FA', metalness: 0.3, roughness: 0.34, envMapIntensity: 0.9 });
+    const darkMat = new MeshStandardMaterial({ color: '#141822', metalness: 0.55, roughness: 0.25, envMapIntensity: 1.2 });
+    const accentMat = new MeshStandardMaterial({ color: '#2A8E9B', metalness: 0.45, roughness: 0.3, emissive: '#0E3A42', envMapIntensity: 1 });
+    const sandMat = new MeshStandardMaterial({ color: '#CDBFA6', metalness: 0.3, roughness: 0.4 });
+    const glassMat = new MeshStandardMaterial({ color: '#DDF6FA', metalness: 0.1, roughness: 0.05, transparent: true, opacity: 0.14, depthWrite: false, envMapIntensity: 1.6 });
+    const glowMat = new MeshBasicMaterial({ color: '#4CC3CF', transparent: true, opacity: 0.28, depthWrite: false, toneMapped: false });
     // Screens are self-lit displays: unlit + no tone mapping keeps the procedural UI crisp and true to the palette.
     const screenMat = (map, tint = 0xffffff) => new MeshBasicMaterial({ map, color: tint, toneMapped: false });
     const chipMat = new MeshBasicMaterial({ map: chipsTex, toneMapped: false, alphaTest: 0.5 });
@@ -443,9 +462,55 @@ export function createHero(stage, { fixedTime = null } = {}) {
     shadow.position.set(0.15, -1.66, -0.6);
     rig.add(shadow);
 
+    // comet: glowing head + sprite tail sampled back along the orbit; the teal point light rides on it
+    const glowCanvas = makeCanvas(64, 64);
+    drawGlow(glowCanvas.getContext('2d'));
+    const glowTex = tex(glowCanvas);
+    const cometHead = new Sprite(new SpriteMaterial({ map: glowTex, color: 0xf0feff, transparent: true, depthWrite: false, toneMapped: false }));
+    rig.add(cometHead);
+    const cometTail = [];
+    for (let i = 1; i <= COMET.tail; i++) {
+      const k = 1 - i / (COMET.tail + 1);
+      const sp = new Sprite(new SpriteMaterial({ map: glowTex, color: 0x7dd9e2, transparent: true, opacity: 0.55 * k * k, depthWrite: false, toneMapped: false }));
+      sp.userData.k = k;
+      rig.add(sp);
+      cometTail.push(sp);
+    }
+
+    // satellite drifting far behind the stack: gold-foil bus, segmented solar wings, dish antenna
+    const satellite = new Group();
+    const foilMat = new MeshStandardMaterial({ color: '#C9A24A', metalness: 0.9, roughness: 0.32, envMapIntensity: 1.3 });
+    const wingMat = new MeshStandardMaterial({ color: '#1C2D63', metalness: 0.6, roughness: 0.2, emissive: '#0A1230', envMapIntensity: 1.5 });
+    const strutMat = new MeshStandardMaterial({ color: '#B9C2CC', metalness: 0.8, roughness: 0.3 });
+    const bus = new Mesh(new CylinderGeometry(0.11, 0.11, 0.3, 16), foilMat);
+    bus.rotation.z = Math.PI / 2;
+    satellite.add(bus);
+    const wingGeo = new BoxGeometry(0.2, 0.28, 0.012);
+    const strutGeo = new CylinderGeometry(0.012, 0.012, 0.2, 6);
+    for (const side of [-1, 1]) {
+      const strut = new Mesh(strutGeo, strutMat);
+      strut.rotation.z = Math.PI / 2;
+      strut.position.x = side * 0.24;
+      satellite.add(strut);
+      for (let i = 0; i < 3; i++) {
+        const wing = new Mesh(wingGeo, wingMat);
+        wing.position.x = side * (0.44 + i * 0.215);
+        satellite.add(wing);
+      }
+    }
+    const dish = new Mesh(new CylinderGeometry(0.1, 0.012, 0.05, 20, 1, true), strutMat);
+    dish.position.set(0.02, 0.17, 0);
+    satellite.add(dish);
+    const mast = new Mesh(new CylinderGeometry(0.006, 0.006, 0.16, 5), strutMat);
+    mast.position.set(-0.08, 0.17, 0);
+    mast.rotation.z = 0.5;
+    satellite.add(mast);
+    satellite.scale.setScalar(0.85);
+    scene.add(satellite);
+
     s = {
       scene, camera, lights, rig, windows, chips, toast, toastBase, cursor, cursorTarget, cursorStart,
-      ctaGlow, strip, stripTex, sctx, caret, textures, lastText: null,
+      ctaGlow, strip, stripTex, sctx, caret, textures, lastText: null, cometHead, cometTail, satellite, tmp: new Vector3(),
     };
     inst.scene = scene;
     inst.camera = camera;
@@ -493,7 +558,7 @@ export function createHero(stage, { fixedTime = null } = {}) {
       g.position.y = cfg.pos[1] + Math.sin(T * 0.9 + cfg.ph) * cfg.amp - (1 - e) * 0.4 - look.y * cfg.k * 0.5;
       g.position.z = cfg.pos[2] - (1 - e) * 2.4;
       g.scale.setScalar(0.9 + 0.1 * e);
-      if (cfg.front) plate.material.opacity = 0.16 + 0.1 * (0.5 + 0.5 * Math.sin(T * 1.6));
+      if (cfg.front) plate.material.opacity = 0.2 + 0.14 * (0.5 + 0.5 * Math.sin(T * 1.6));
       if (i === 3) g.rotation.z = Math.sin(T * 0.7) * 0.008;
     });
     s.chips.forEach(({ g, ph, base, delay }) => {
@@ -505,7 +570,21 @@ export function createHero(stage, { fixedTime = null } = {}) {
     });
 
     // point light orbit → moving petrol rim
-    s.lights.point.position.set(Math.cos(T * 0.4) * 2.6, 1.1 + Math.sin(T * 0.6) * 0.5, 1.4 + Math.sin(T * 0.4) * 1.1);
+    const sx = ((T / 42) + 0.28) % 1;
+    s.satellite.position.set(-4.7 + sx * 9.4, 2.4 + Math.sin(T * 0.2) * 0.12 + sx * 0.2, -3.4);
+    s.satellite.rotation.set(0.18 + Math.sin(T * 0.3) * 0.08, Math.sin(T * 0.11) * 0.6, 0.12);
+
+    const ck = intro(1.1);
+    cometAt(T, s.cometHead.position);
+    s.cometHead.scale.setScalar(0.42 * ck * (1 + Math.sin(T * 9) * 0.06));
+    s.cometTail.forEach((sp, i) => {
+      cometAt(T - (i + 1) * COMET.lag, sp.position);
+      sp.scale.setScalar(0.34 * sp.userData.k * ck);
+    });
+    // the comet carries the teal light, so windows light up as it flies past
+    s.cometHead.getWorldPosition(s.tmp);
+    s.lights.point.position.copy(s.tmp);
+    s.lights.point.intensity = 14 * ck;
 
     // story loop: cursor → click CTA → toast
     const c = T < 2 ? -1 : (T - 2) % 8;

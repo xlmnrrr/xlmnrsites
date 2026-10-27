@@ -68,6 +68,7 @@ const SVG_NS = 'http://www.w3.org/2000/svg';
 // Icons: static path data only (never from content.json).
 const ICONS = {
   arrow: [['path', { d: 'M5 12h14M13 6l6 6-6 6' }]],
+  external: [['path', { d: 'M7 17L17 7M9 7h8v8' }]],
   check: [['path', { d: 'M5 12.5l4.5 4.5L19 7.5' }]],
   landing: [['rect', { x: 3, y: 4, width: 18, height: 16, rx: 2 }], ['path', { d: 'M3 8.5h18M7 12.5h6M7 15.5h10' }]],
   corporate: [['rect', { x: 3, y: 4, width: 18, height: 16, rx: 2 }], ['path', { d: 'M3 8.5h18M9 8.5V20M12.5 12h5M12.5 15h5' }]],

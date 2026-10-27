@@ -7,7 +7,7 @@ import {
 } from '../vendor/three.custom.min.js';
 import {
   C, roundedSlab, prism, atlasPlane, makeCanvas, canvasTexture, fillRR, strokeRR, dot,
-  addLights, disposeAll, ease, clamp01,
+  addLights, cosmicEnvironment, disposeAll, ease, clamp01,
 } from './three-kit.js';
 
 const PAGE = { w: 4.3, h: 3.1, tw: 512, th: 368 };
@@ -118,9 +118,9 @@ function drawFx(ctx) {
   ctx.translate(128, 192);
   ctx.scale(1, 0.45);
   const s = ctx.createRadialGradient(0, 0, 0, 0, 0, 126);
-  s.addColorStop(0, 'rgba(22,24,27,.24)');
-  s.addColorStop(0.6, 'rgba(22,24,27,.07)');
-  s.addColorStop(1, 'rgba(22,24,27,0)');
+  s.addColorStop(0, 'rgba(76,195,207,.32)');
+  s.addColorStop(0.6, 'rgba(110,86,220,.1)');
+  s.addColorStop(1, 'rgba(110,86,220,0)');
   ctx.fillStyle = s;
   ctx.fillRect(-128, -142, 256, 284);
   ctx.restore();
@@ -155,6 +155,7 @@ export function createBuilder(stage, container) {
     const camera = new PerspectiveCamera(30, 6 / 5, 0.1, 60);
     const lights = addLights(scene);
     lights.point.position.set(2.4, 1.6, 2.4);
+    scene.environment = cosmicEnvironment(stage);
 
     const textures = [];
     const tex = (w, h, draw) => {
@@ -171,7 +172,7 @@ export function createBuilder(stage, container) {
     const rig = new Group();
     scene.add(rig);
 
-    rig.add(new Mesh(roundedSlab(PAGE.w + 0.1, PAGE.h + 0.1, 0.12, 0.12), new MeshStandardMaterial({ color: C.body, metalness: 0.25, roughness: 0.45 })));
+    rig.add(new Mesh(roundedSlab(PAGE.w + 0.1, PAGE.h + 0.1, 0.12, 0.12), new MeshStandardMaterial({ color: '#E9EEF2', metalness: 0.5, roughness: 0.28, envMapIntensity: 1.1 })));
     const page = new Mesh(new PlaneGeometry(PAGE.w, PAGE.h), new MeshBasicMaterial({ map: pageTex, toneMapped: false }));
     page.position.z = 0.061;
     rig.add(page);

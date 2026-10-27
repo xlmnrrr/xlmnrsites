@@ -10,17 +10,33 @@ export const preloaderDone = new Promise((r) => { resolvePreloader = r; });
 function initPreloader() {
   const pl = document.getElementById('preloader');
   if (!pl || root.classList.contains('pl-skip')) { resolvePreloader(); return; }
+  // Stays while the site loads, but at least long enough to see the mark draw itself (2.3 s);
+  // never longer than 4 s — CSS also collapses it on its own at 4 s. The page (and LCP) is
+  // already painted underneath, so this only shapes the reveal.
+  const MIN = reduceMotion.matches ? 600 : 2700;
+  const MAX = 4300;
   let finished = false;
   const finish = () => {
     if (finished) return;
     finished = true;
+    // Exit: the mark flies into the header logo's place while the dark veil dissolves into the site.
+    const mark = pl.querySelector('.preloader__mark');
+    const logo = document.querySelector('.header .logo__mark');
+    if (mark && logo) {
+      const a = mark.getBoundingClientRect();
+      const b = logo.getBoundingClientRect();
+      const header = document.querySelector('.header[data-intro]');
+      const dy = header && !header.classList.contains('is-in') ? header.offsetHeight : 0;
+      pl.style.setProperty('--fly-x', `${(b.left + b.width / 2 - (a.left + a.width / 2)).toFixed(1)}px`);
+      pl.style.setProperty('--fly-y', `${(b.top + dy + b.height / 2 - (a.top + a.height / 2)).toFixed(1)}px`);
+      pl.style.setProperty('--fly-s', (b.width / a.width).toFixed(3));
+    }
     pl.classList.add('is-done');
-    setTimeout(resolvePreloader, 180);
-    setTimeout(() => pl.remove(), 600);
+    setTimeout(resolvePreloader, 520);
+    setTimeout(() => pl.remove(), 1650);
   };
-  // Hard ceiling of 1.2 s from navigation start; CSS hides it on its own as well.
-  setTimeout(finish, Math.max(0, 1200 - performance.now()));
-  const onLoad = () => setTimeout(finish, Math.max(0, Math.min(450, 1200 - performance.now())));
+  setTimeout(finish, Math.max(0, MAX - performance.now()));
+  const onLoad = () => setTimeout(finish, Math.max(0, MIN - performance.now()));
   if (document.readyState === 'complete') onLoad();
   else window.addEventListener('load', onLoad, { once: true });
 }
@@ -209,7 +225,7 @@ let magnet = null;
 let tilt = null;
 const cursor = { el: null, dot: null, follow: null, label: null, rx: -100, ry: -100, state: '' };
 
-function frame() {
+function frame(now) {
   rafId = 0;
   if (pointer.moved) {
     pointer.moved = false;
@@ -217,7 +233,8 @@ function frame() {
     updateTilt();
     updateCursorState();
   }
-  if (cursor.el && moveCursor()) schedule();
+  const tilting = stepTilts(now);
+  if ((cursor.el && moveCursor()) || tilting) schedule();
 }
 
 function updateMagnet() {
@@ -237,31 +254,58 @@ function updateMagnet() {
   const oy = parseFloat(magnet.style.getPropertyValue('--my')) || 0;
   const cx = r.left - ox + r.width / 2;
   const cy = r.top - oy + r.height / 2;
-  const dx = clamp((pointer.x - cx) / (r.width / 2), -1, 1) * 7;
-  const dy = clamp((pointer.y - cy) / (r.height / 2), -1, 1) * 7;
+  const dx = clamp((pointer.x - cx) / (r.width / 2), -1, 1) * 8;
+  const dy = clamp((pointer.y - cy) / (r.height / 2), -1, 1) * 8;
   magnet.style.setProperty('--mx', `${dx.toFixed(2)}px`);
   magnet.style.setProperty('--my', `${dy.toFixed(2)}px`);
 }
+
+// Tilt targets come from the pointer; the angles glide towards them every frame (critically damped),
+// so a card never snaps — not when the cursor leaves, not when it jumps across.
+const tilts = new Map(); // element → { rx, ry, tx, ty }
 
 function updateTilt() {
   const el = pointer.target && pointer.target.closest('[data-tilt]');
   if (el !== tilt) {
     if (tilt) {
       tilt.classList.remove('is-tilting');
-      tilt.style.setProperty('--rx', '0deg');
-      tilt.style.setProperty('--ry', '0deg');
+      const st = tilts.get(tilt);
+      if (st) { st.tx = 0; st.ty = 0; }
     }
     tilt = el;
-    if (tilt) tilt.classList.add('is-tilting');
+    if (tilt) {
+      tilt.classList.add('is-tilting');
+      if (!tilts.has(tilt)) tilts.set(tilt, { rx: 0, ry: 0, tx: 0, ty: 0 });
+    }
   }
   if (!tilt) return;
   const r = tilt.getBoundingClientRect();
   const px = clamp((pointer.x - r.left) / r.width);
   const py = clamp((pointer.y - r.top) / r.height);
-  tilt.style.setProperty('--ry', `${((px - 0.5) * 16).toFixed(2)}deg`);
-  tilt.style.setProperty('--rx', `${((0.5 - py) * 16).toFixed(2)}deg`);
+  const st = tilts.get(tilt);
+  st.ty = (px - 0.5) * 14;
+  st.tx = (0.5 - py) * 14;
   tilt.style.setProperty('--gx', `${(px * 100).toFixed(1)}%`);
   tilt.style.setProperty('--gy', `${(py * 100).toFixed(1)}%`);
+}
+
+let tiltLast = 0;
+function stepTilts(now) {
+  const dt = Math.min(0.05, tiltLast ? (now - tiltLast) / 1000 : 0.016);
+  tiltLast = now;
+  const k = 1 - Math.exp(-dt * 7);
+  let moving = false;
+  for (const [el, st] of tilts) {
+    st.rx += (st.tx - st.rx) * k;
+    st.ry += (st.ty - st.ry) * k;
+    const done = Math.abs(st.tx - st.rx) < 0.01 && Math.abs(st.ty - st.ry) < 0.01;
+    if (done) { st.rx = st.tx; st.ry = st.ty; } else moving = true;
+    el.style.setProperty('--rx', `${st.rx.toFixed(3)}deg`);
+    el.style.setProperty('--ry', `${st.ry.toFixed(3)}deg`);
+    if (done && st.tx === 0 && st.ty === 0 && el !== tilt) tilts.delete(el);
+  }
+  if (!moving) tiltLast = 0;
+  return moving;
 }
 
 function updateCursorState() {
@@ -274,6 +318,8 @@ function updateCursorState() {
     state = 'is-label';
     label = t.closest('[data-cursor-label]').dataset.cursorLabel;
   } else if (t && t.closest('a, button, summary, label, [role="tab"]')) state = 'is-hover';
+  else if (t && t.closest('h1, h2')) state = 'is-heading';
+  cursor.el.classList.toggle('on-dark', Boolean(t && t.closest('[data-theme="dark"], [data-header="dark"]')));
   if (state !== cursor.state) {
     if (cursor.state) cursor.el.classList.remove(cursor.state);
     if (state) cursor.el.classList.add(state);
@@ -325,7 +371,7 @@ function initPointerFx() {
     pointer.y = e.clientY;
     pointer.target = e.target instanceof Element ? e.target : null;
     pointer.moved = true;
-    root.classList.add('cursor-on');
+    if (!root.classList.contains('cursor-on')) root.classList.add('cursor-on'); // add() always rewrites the attribute
     schedule();
   }, { passive: true });
   document.documentElement.addEventListener('pointerleave', releaseAll);
@@ -372,10 +418,19 @@ function initSticky() {
 }
 
 /* ---------- hero visibility (pauses background drift) ---------- */
+// Dark «space» sections run their aurora only while on screen.
 function initHeroVisibility() {
-  const hero = document.querySelector('.hero');
-  if (!hero) return;
-  new IntersectionObserver(([en]) => hero.classList.toggle('is-visible', en.isIntersecting)).observe(hero);
+  // The fixed ambient glow sits behind the light sections only: animate it only while one is on screen.
+  const light = new Set();
+  const lightIO = new IntersectionObserver((entries) => {
+    entries.forEach((en) => (en.isIntersecting ? light.add(en.target) : light.delete(en.target)));
+    root.classList.toggle('light-view', light.size > 0);
+  });
+  document.querySelectorAll('main > .section:not([data-theme])').forEach((el) => lightIO.observe(el));
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach((en) => en.target.classList.toggle('is-visible', en.isIntersecting));
+  });
+  document.querySelectorAll('.hero, [data-theme="dark"], .descent, .dusk').forEach((el) => io.observe(el));
 }
 
 export function initFx() {

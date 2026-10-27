@@ -116,10 +116,17 @@ export function initNav() {
     const update = () => {
       ticking = false;
       header.classList.toggle('is-scrolled', window.scrollY > 8);
+      // Which section sits right under the header bar decides its light/dark variant.
+      // elementsFromPoint skips overlays (preloader, ambient layers) and looks at the page content.
+      const probe = document.elementsFromPoint(window.innerWidth / 2, header.offsetHeight + 2)
+        .find((el) => el.closest('main, footer'));
+      header.classList.toggle('on-dark', Boolean(probe && probe.closest('[data-theme="dark"], [data-header="dark"]')));
     };
-    window.addEventListener('scroll', () => {
+    const queue = () => {
       if (!ticking) { ticking = true; requestAnimationFrame(update); }
-    }, { passive: true });
+    };
+    window.addEventListener('scroll', queue, { passive: true });
+    window.addEventListener('resize', queue, { passive: true });
     update();
   }
 

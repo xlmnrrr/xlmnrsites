@@ -9,11 +9,19 @@ const pad = (i) => String(i + 1).padStart(2, '0');
 const SAFE_IMG = /^(\.?\/)?assets\/img\/[\w\-/]+\.(svg|webp|png|jpe?g|avif)$/;
 // content.json stores site-root-relative paths; resolve them so the site also works in a subfolder.
 const imgSrc = (p) => siteUrl(SAFE_IMG.test(str(p)) ? str(p).replace(/^\.\//, '') : 'assets/img/cases/landing.svg');
+// Case links: demo pages inside the site (examples/…) or an external https site.
+const SAFE_EXAMPLE = /^(\.?\/)?examples\/[\w\-/]+(\.html|\/)$/;
+function caseUrl(u) {
+  const v = str(u).trim();
+  if (SAFE_EXAMPLE.test(v)) return siteUrl(v.replace(/^\.\//, ''));
+  return /^https:\/\/[^\s<>"]+$/.test(v) ? v : '';
+}
 
 function signature(el) {
   return [
     el.textContent.replace(/\s+/g, ' ').trim(),
     ...[...el.querySelectorAll('img')].map((i) => i.src),
+    ...[...el.querySelectorAll('a[href]')].map((a) => a.href),
     ...[...el.querySelectorAll('[data-service]')].map((b) => b.dataset.service),
   ].join('|');
 }
@@ -52,6 +60,12 @@ function step(s, i) {
 
 function caseCard(c, i, badge) {
   const src = imgSrc(c.image);
+  const url = caseUrl(c.url);
+  // The card opens the info dialog; the demo itself is viewed inside the site (viewer window).
+  // href is kept for no-JS visitors.
+  const action = url
+    ? h('a', { class: 'case__more', href: url, 'data-case': i, 'data-cursor-label': 'Смотреть', 'aria-haspopup': 'dialog' }, 'Смотреть пример', arrow())
+    : h('button', { type: 'button', class: 'case__more', 'data-case': i, 'data-cursor-label': 'Смотреть', 'aria-haspopup': 'dialog' }, 'Подробнее', arrow());
   return h('article', { class: 'card case', 'data-tilt': true, 'data-reveal': true },
     h('div', { class: 'case__media' }, h('img', { src, width: 640, height: 440, loading: 'lazy', decoding: 'async', alt: '' })),
     h('span', { class: 'badge' }, badge),
@@ -59,7 +73,7 @@ function caseCard(c, i, badge) {
       h('p', { class: 'case__type' }, str(c.type)),
       h('h3', { class: 'case__title' }, str(c.title)),
       h('p', { class: 'case__text' }, str(c.text)),
-      h('button', { type: 'button', class: 'case__more', 'data-case': i, 'data-cursor-label': 'Смотреть', 'aria-haspopup': 'dialog' }, 'Подробнее', arrow())));
+      action));
 }
 
 function advantage(a) {
@@ -96,15 +110,26 @@ export function renderLists(data) {
 }
 
 // Case details dialog — filled from content.json, falling back to the card itself.
-export function initCases(contentPromise, openDialog) {
+// «Посмотреть сайт» opens the demo in the in-site viewer, «Хочу такой же» goes to the form.
+export function initCases(contentPromise, openDialog, openViewer) {
   const dlg = document.getElementById('case-dialog');
   if (!dlg) return;
+  const view = document.getElementById('case-dialog-view');
+  const preview = document.getElementById('case-dialog-preview');
   let data = null;
+  let current = null;
   contentPromise.then((d) => { data = d; });
+
+  const showSite = (e) => {
+    if (current && current.url) openViewer({ url: current.url, title: current.title, kind: 'example', service: current.service }, e.currentTarget);
+  };
+  view.addEventListener('click', showSite);
+  preview.addEventListener('click', showSite);
 
   document.addEventListener('click', (e) => {
     const btn = e.target.closest('[data-case]');
     if (!btn) return;
+    e.preventDefault();
     const i = Number(btn.dataset.case);
     const card = btn.closest('.case');
     const c = arr(get(data, 'cases.items'))[i] || {
@@ -112,16 +137,25 @@ export function initCases(contentPromise, openDialog) {
       title: card.querySelector('.case__title')?.textContent,
       text: card.querySelector('.case__text')?.textContent,
       image: card.querySelector('img')?.getAttribute('src'),
+      url: btn.getAttribute('href') || '',
       details: [],
     };
+    const title = str(c.title);
+    current = {
+      url: caseUrl(c.url) || (btn.tagName === 'A' ? btn.href : ''),
+      title,
+      service: title ? `сайт как пример «${title}»` : str(c.service) || str(c.type),
+    };
     document.getElementById('case-dialog-type').textContent = str(c.type);
-    document.getElementById('case-dialog-title').textContent = str(c.title);
+    document.getElementById('case-dialog-title').textContent = title;
     document.getElementById('case-dialog-text').textContent = str(c.text);
     document.getElementById('case-dialog-img').setAttribute('src', imgSrc(c.image));
     const list = document.getElementById('case-dialog-list');
     list.replaceChildren(...arr(c.details).map((d) => h('li', null, str(d))));
     list.hidden = list.children.length === 0;
-    document.getElementById('case-dialog-cta').dataset.service = str(c.service) || str(c.type);
+    view.hidden = !current.url;
+    preview.disabled = !current.url;
+    document.getElementById('case-dialog-cta').dataset.service = current.service;
     openDialog(dlg, btn);
   });
 }
