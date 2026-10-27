@@ -99,6 +99,10 @@ const INTENTS = {
 const AFFIRM = new Set(['да', 'давай', 'давайте', 'хочу', 'ок', 'окей', 'ага', 'конечно', 'поехали', 'согласен', 'согласна', 'хорошо', 'go', 'да хочу']);
 
 const DEFAULT_SUGGEST = ['Сколько стоит сайт?', 'Какие сроки?', 'Покажи примеры', 'Как проходит работа?', 'Как связаться?'];
+// The assistant offers a fixed set of questions (no free text): every one is answered from content.json.
+const QUESTIONS = ['Сколько стоит сайт?', 'Какие сроки?', 'Какие услуги?', 'Покажи примеры', 'Как проходит работа?',
+  'Как проходит оплата?', 'Что нужно от меня?', 'Чем отличается лендинг от корпоративного?', 'Поможете с доменом и хостингом?',
+  'Кому принадлежит сайт?', 'Что входит в поддержку?', 'Как связаться?'];
 
 /* ---------- engine ---------- */
 export function createBrain(getData) {
@@ -167,7 +171,7 @@ export function createBrain(getData) {
       const ex = exampleActions();
       return { text: [ex.length ? 'Вот демо-сайты — откройте прямо здесь, можно переключить вид «Компьютер / Телефон»:' : 'Примеры собраны в разделе «Кейсы».', 'Это демо для вымышленных компаний — показывают стиль и качество вёрстки.'], actions: ex.length ? ex : [act.section('cases', 'Перейти к кейсам')], suggest: ['Хочу такой же', 'Сколько стоит сайт?'] };
     },
-    contacts: () => ({ text: [`Телефон: ${phone()}`, `Email: ${email()}`, `${d('contacts.city', 'г. Уфа')}. ${d('contacts.replyNote', 'Отвечу в ВК или по телефону')}.`], actions: [act.call(), act.mail(), act.form()] }),
+    contacts: () => ({ text: [`Телефон: ${phone()}`, `Email: ${email()}`, `${d('contacts.city', 'г. Уфа')}. ${d('contacts.replyNote', 'Отвечу в ВК или по телефону')}.`], actions: [act.call(), act.form()] }),
     order: () => {
       ctx.offer = null;
       return { text: ['Отлично! Оставьте заявку: имя, удобный контакт и пару слов о задаче. Макар ответит в ВК или по телефону.'], actions: [act.form(ctx.service ? (serviceBy(ctx.service)?.service) : undefined, 'Перейти к заявке'), act.call()] };
@@ -252,9 +256,7 @@ export function initBot(contentPromise, openViewer) {
   const dlg = document.getElementById('bot');
   const log = document.getElementById('bot-log');
   const chips = document.getElementById('bot-choices');
-  const form = document.getElementById('bot-form');
-  const input = document.getElementById('bot-input');
-  if (!dlg || !log || !chips || !form || !input) return;
+  if (!dlg || !log || !chips) return;
   let data = null;
   contentPromise.then((c) => { data = c; });
   const brain = createBrain(() => data);
@@ -287,13 +289,12 @@ export function initBot(contentPromise, openViewer) {
     const acts = (res.actions || []).map(actionNode).filter(Boolean);
     if (acts.length) msg.append(h('div', { class: 'msg__actions' }, acts));
     log.append(msg);
-    setSuggest(res.suggest);
     scrollDown();
     if (res.auto === 'form') setTimeout(() => acts[0]?.click(), 700);
   }
 
   function setSuggest(list) {
-    chips.replaceChildren(...(list || []).map((label) => {
+    chips.replaceChildren(...list.map((label) => {
       const b = h('button', { type: 'button', class: 'chip' }, label);
       b.addEventListener('click', () => ask(label));
       return b;
@@ -316,21 +317,12 @@ export function initBot(contentPromise, openViewer) {
     setTimeout(() => { typing.remove(); done(); }, Math.min(1100, 380 + words * 12));
   }
 
-  form.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const t = input.value;
-    input.value = '';
-    ask(t);
-  });
 
   dlg.addEventListener('xl:open', () => {
     document.querySelector('.bot-fab')?.classList.add('is-seen');
     if (started) return;
     started = true;
-    botMessage({ text: ['Здравствуйте! Я помощник XLMNR. Подскажу стоимость, сроки, как проходит работа, покажу примеры.', 'Напишите вопрос своими словами или выберите тему ниже.'], suggest: DEFAULT_SUGGEST });
-  });
-  // Focus the input on desktop only — on phones the keyboard would cover the answers.
-  dlg.addEventListener('xl:open', () => {
-    if (matchMedia('(hover: hover) and (pointer: fine)').matches) setTimeout(() => input.focus({ preventScroll: true }), 60);
+    botMessage({ text: ['Здравствуйте! Я помощник XLMNR. Подскажу стоимость, сроки, как проходит работа, покажу примеры.', 'Выберите вопрос ниже.'] });
+    setSuggest(QUESTIONS);
   });
 }

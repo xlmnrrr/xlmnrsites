@@ -20,7 +20,22 @@ function syncLock() {
   emitUi();
 }
 
+const CLOSE_MS = 280;
+
+// Every dialog fades/slides out before it really closes (Esc, ✕, backdrop, links inside).
+function animateClosing(dlg) {
+  const nativeClose = HTMLDialogElement.prototype.close.bind(dlg);
+  dlg.close = (value) => {
+    if (!dlg.open || dlg.classList.contains('is-closing')) return;
+    if (reduceMotion.matches) { nativeClose(value); return; }
+    dlg.classList.add('is-closing');
+    setTimeout(() => { dlg.classList.remove('is-closing'); nativeClose(value); }, CLOSE_MS);
+  };
+  dlg.addEventListener('cancel', (e) => { e.preventDefault(); dlg.close(); });
+}
+
 function watchDialogs() {
+  document.querySelectorAll('dialog').forEach(animateClosing);
   new MutationObserver((mutations) => {
     for (const m of mutations) {
       const dlg = m.target;
@@ -56,7 +71,7 @@ export function scrollToSection(id) {
   };
   if (document.querySelector('dialog[open]')) {
     closeOpenDialogs();
-    setTimeout(go, 0); // after the scroll lock is released (MutationObserver microtask)
+    setTimeout(go, CLOSE_MS + 40); // after the closing animation and the scroll-lock release
   } else {
     go();
   }

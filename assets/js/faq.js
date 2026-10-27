@@ -1,7 +1,5 @@
 import { h, get } from './content.js';
-import { reduceMotion } from './env.js';
 
-const EASE = 'cubic-bezier(.2,.7,.2,1)';
 
 // Data shape: [{ title, items: [{ q, a }] }] — read from the static DOM until content.json arrives.
 function readDom() {
@@ -17,31 +15,6 @@ function readDom() {
 function valid(categories) {
   return Array.isArray(categories) && categories.length > 0 &&
     categories.every((c) => c && typeof c.title === 'string' && Array.isArray(c.items));
-}
-
-/* ---------- accordion ---------- */
-function animateDetails(details) {
-  const body = details.querySelector('.qa__a');
-  const opening = !details.open;
-  if (details._anim) details._anim.cancel();
-  if (opening) details.open = true;
-  const from = opening ? 0 : body.offsetHeight;
-  const to = opening ? body.scrollHeight : 0;
-  const anim = body.animate([{ height: `${from}px` }, { height: `${to}px` }], { duration: 380, easing: EASE });
-  details._anim = anim;
-  anim.onfinish = () => {
-    details._anim = null;
-    if (!opening) details.open = false;
-  };
-}
-
-function initAccordion(container) {
-  container.addEventListener('click', (e) => {
-    const summary = e.target.closest('.qa__q');
-    if (!summary || reduceMotion.matches) return;
-    e.preventDefault();
-    animateDetails(summary.parentElement);
-  });
 }
 
 /* ---------- tabs ---------- */
@@ -99,7 +72,6 @@ export function initFaq(contentPromise) {
   const body = document.getElementById('faq-body');
   if (!tablist || !body) return;
   initTabs(tablist);
-  initAccordion(body);
 
   contentPromise.then((c) => {
     const cats = get(c, 'faq.categories');
