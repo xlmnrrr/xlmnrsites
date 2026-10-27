@@ -1,0 +1,9 @@
+{
+  "name": "xlmnr-lead-handler",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Yandex Cloud Function: lead form → VK messages.send (+ optional SMTP fallback). No dependencies.",
+  "main": "handler.js",
+  "engines": { "node": ">=20" },
+  "scripts": { "test": "node test-local.js" }
+}

@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Генератор постера hero</title>
+  <link rel="stylesheet" href="/tools/poster.css">
+</head>
+<body>
+  <main class="wrap">
+    <h1>Постер для hero (fallback без 3D)</h1>
+    <p>Рендерит тот же кадр сцены, что и сайт, в 1120×840 с прозрачным фоном. Параметр <code>?t=6</code> — момент анимации.</p>
+    <div class="stage" id="stage"></div>
+    <p class="actions">
+      <button type="button" id="dl2x">Скачать hero-poster@2x.webp</button>
+      <button type="button" id="dl1x">Скачать hero-poster@1x.webp</button>
+      <span id="info"></span>
+    </p>
+    <pre id="out" hidden></pre>
+  </main>
+  <script type="module" src="/tools/poster.js"></script>
+</body>
+</html>

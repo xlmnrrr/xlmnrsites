@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src https://api.github.com; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Админка — XLMNR</title>
+  <link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/css/main.css">
+  <link rel="stylesheet" href="/admin/admin.css">
+  <script type="module" src="/admin/admin.js"></script>
+</head>
+<body class="admin">
+  <header class="admin-head">
+    <div class="admin-wrap admin-head__inner">
+      <a class="logo" href="/" target="_blank" rel="noopener">
+        <svg class="logo__mark" viewBox="0 0 28 28" width="28" height="28" aria-hidden="true"><path d="M7 7l14 14"/><path class="logo__accent" d="M21 7L7 21"/></svg>
+        <span class="logo__word">XLMNR</span>
+      </a>
+      <p class="admin-head__repo">Контент сайта · <code id="repo-label">xlmnrrr/xlmnrsites · data/content.json · main</code></p>
+      <span class="admin-dirty" id="dirty" hidden>Есть несохранённые изменения</span>
+    </div>
+  </header>
+
+  <main class="admin-wrap admin-main">
+    <section class="panel" aria-labelledby="auth-title">
+      <h1 class="panel__title" id="auth-title">Доступ к GitHub</h1>
+      <p class="panel__text">Нужен fine-grained Personal Access Token только для репозитория <code>xlmnrrr/xlmnrsites</code> с правом <b>Contents: Read and write</b>. Токен хранится только в этом браузере и никуда, кроме api.github.com, не отправляется.</p>
+      <form class="auth" id="auth-form" autocomplete="off">
+        <label class="field">
+          <span class="field__label">Personal Access Token</span>
+          <input class="field__input" id="token" type="password" spellcheck="false" autocomplete="off" placeholder="github_pat_…">
+        </label>
+        <label class="admin-check"><input type="checkbox" id="remember" checked> Запомнить на этом устройстве</label>
+        <div class="auth__actions">
+          <button class="btn btn--primary" type="submit">Подключить и загрузить</button>
+          <button class="btn btn--ghost" type="button" id="forget">Забыть токен</button>
+        </div>
+      </form>
+      <div class="admin-status" id="status" role="status" aria-live="polite"></div>
+    </section>
+
+    <section class="panel" id="editor-panel" aria-labelledby="editor-title" hidden>
+      <div class="panel__row">
+        <h2 class="panel__title" id="editor-title">Редактор</h2>
+        <div class="panel__actions">
+          <button class="btn btn--ghost btn--sm" type="button" id="reload">Загрузить заново</button>
+          <button class="btn btn--ghost btn--sm" type="button" id="download">Скачать JSON</button>
+          <button class="btn btn--primary btn--sm" type="button" id="save">Сохранить на GitHub</button>
+        </div>
+      </div>
+      <div class="admin-tabs" role="tablist" id="tabs" aria-label="Разделы"></div>
+      <div class="admin-form" id="form"></div>
+      <div class="raw" id="raw" hidden>
+        <p class="panel__text">Прямое редактирование JSON. Перед сохранением структура проверяется.</p>
+        <textarea class="field__input raw__area" id="raw-text" spellcheck="false" aria-label="JSON"></textarea>
+        <button class="btn btn--ghost btn--sm" type="button" id="raw-apply">Применить JSON</button>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
