@@ -1,7 +1,7 @@
 // One-off generator for assets/img/hero-poster@{1x,2x}.webp.
 // Headless use: msedge --headless --dump-dom ".../tools/poster.html?dump=1" prints the data URL into #out.
-import { Stage } from '/assets/js/three-kit.js';
-import { createHero } from '/assets/js/hero3d.js';
+import { Stage } from '../assets/js/three-kit.js';
+import { createHero } from '../assets/js/hero3d.js';
 
 const params = new URLSearchParams(location.search);
 const t = Number(params.get('t') || 6);

@@ -34,7 +34,7 @@ Honeypot (`website` не пустой) → `200 {"ok":true}` без отправ
 | `VK_TOKEN` | да | Токен сообщества ВК с правом «Сообщения сообщества» (рекомендуется) или пользовательский токен с `messages`. **Только в env/Lockbox, никогда в репозиторий и content.json.** |
 | `VK_PEER_ID` | да | Кому писать: ваш числовой user id (вы должны разрешить сообществу писать вам) или `2000000000 + id беседы`. |
 | `VK_API_VERSION` | нет | По умолчанию `5.199`. |
-| `ALLOWED_ORIGINS` | нет | Через пробел: `https://xlmnr.ru http://localhost:8000` (по умолчанию именно так). Пробел, а не запятая — у `yc --environment` запятая разделяет переменные. |
+| `ALLOWED_ORIGINS` | нет | Через пробел: `https://xlmnr.ru https://xlmnrrr.github.io http://localhost:8000` (по умолчанию именно так; github.io — для превью на GitHub Pages). Пробел, а не запятая — у `yc --environment` запятая разделяет переменные. |
 | `SMTP_HOST`, `SMTP_PORT` | нет | Для Mail.ru: `smtp.mail.ru`, `465` (только неявный TLS; STARTTLS/587 не поддерживается). |
 | `SMTP_USER`, `SMTP_PASS` | нет | Ящик и **пароль для внешних приложений** (не основной пароль). |
 | `SMTP_FROM`, `SMTP_TO` | нет | По умолчанию `FROM = SMTP_USER`, `TO = makar.ulyanov.02@mail.ru`. |
@@ -63,7 +63,7 @@ yc serverless function version create \
   --service-account-id <id сервисного аккаунта> \
   --secret environment-variable=VK_TOKEN,id=<id секрета>,key=VK_TOKEN \
   --environment VK_PEER_ID=<peer_id>,VK_API_VERSION=5.199
-# ALLOWED_ORIGINS не задаём: значение по умолчанию уже «https://xlmnr.ru http://localhost:8000».
+# ALLOWED_ORIGINS не задаём: значение по умолчанию уже «https://xlmnr.ru https://xlmnrrr.github.io http://localhost:8000».
 # Чтобы изменить список — задайте переменную в консоли (Редактор → Переменные окружения).
 
 yc serverless function allow-unauthenticated-invoke xlmnr-lead

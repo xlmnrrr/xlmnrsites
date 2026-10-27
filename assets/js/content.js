@@ -3,11 +3,16 @@
 
 const SAFE_HREF = /^(tel:\+?[\d\-()\s]+|mailto:[^\s<>"]+|https:\/\/[^\s<>"]+|\/[^\s<>"]*)$/i;
 
+// Site root resolved from this module's URL, so the site works both at a domain root
+// and in a subfolder (GitHub Pages project site: /xlmnrsites/).
+export const SITE_ROOT = new URL('../../', import.meta.url);
+export const siteUrl = (path) => new URL(path.replace(/^\/+/, ''), SITE_ROOT).href;
+
 let cache = null;
 
 export function loadContent() {
   if (!cache) {
-    cache = fetch('/data/content.json', { cache: 'no-cache', credentials: 'omit' })
+    cache = fetch(siteUrl('data/content.json'), { cache: 'no-cache', credentials: 'omit' })
       .then((r) => (r.ok ? r.json() : null))
       .catch(() => null);
   }

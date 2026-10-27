@@ -78,7 +78,9 @@ export function initNav() {
     if (!t) return;
 
     if (t.hasAttribute('data-scroll-top')) {
-      if (location.pathname === '/' || location.pathname.endsWith('/index.html')) {
+      // Same page (domain root or GitHub Pages subfolder): scroll up instead of reloading.
+      const target = new URL(t.getAttribute('href'), location.href).pathname.replace(/index\.html$/, '');
+      if (target === location.pathname.replace(/index\.html$/, '')) {
         e.preventDefault();
         closeOpenDialogs();
         window.scrollTo({ top: 0, behavior: reduceMotion.matches ? 'auto' : 'smooth' });

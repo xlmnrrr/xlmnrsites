@@ -1,0 +1,9 @@
+# secrets never go to the repo
+.env
+*.env
+backend/ycf/function.zip
+# local tooling
+.claude/
+node_modules/
+.DS_Store
+Thumbs.db

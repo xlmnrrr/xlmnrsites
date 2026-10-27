@@ -1,17 +1,19 @@
 // Re-renders list sections from content.json. Static HTML is the no-JS/SEO snapshot;
 // nodes are replaced only when the content actually differs.
-import { h, icon, get } from './content.js';
+import { h, icon, get, siteUrl } from './content.js';
 import { observeReveal } from './fx.js';
 
 const arr = (v) => (Array.isArray(v) ? v : []);
 const str = (v) => (typeof v === 'string' ? v : '');
 const pad = (i) => String(i + 1).padStart(2, '0');
-const SAFE_IMG = /^\/assets\/img\/[\w\-/]+\.(svg|webp|png|jpe?g|avif)$/;
+const SAFE_IMG = /^(\.?\/)?assets\/img\/[\w\-/]+\.(svg|webp|png|jpe?g|avif)$/;
+// content.json stores site-root-relative paths; resolve them so the site also works in a subfolder.
+const imgSrc = (p) => siteUrl(SAFE_IMG.test(str(p)) ? str(p).replace(/^\.\//, '') : 'assets/img/cases/landing.svg');
 
 function signature(el) {
   return [
     el.textContent.replace(/\s+/g, ' ').trim(),
-    ...[...el.querySelectorAll('img')].map((i) => i.getAttribute('src')),
+    ...[...el.querySelectorAll('img')].map((i) => i.src),
     ...[...el.querySelectorAll('[data-service]')].map((b) => b.dataset.service),
   ].join('|');
 }
@@ -49,7 +51,7 @@ function step(s, i) {
 }
 
 function caseCard(c, i, badge) {
-  const src = SAFE_IMG.test(str(c.image)) ? c.image : '/assets/img/cases/landing.svg';
+  const src = imgSrc(c.image);
   return h('article', { class: 'card case', 'data-tilt': true, 'data-reveal': true },
     h('div', { class: 'case__media' }, h('img', { src, width: 640, height: 440, loading: 'lazy', decoding: 'async', alt: '' })),
     h('span', { class: 'badge' }, badge),
@@ -115,7 +117,7 @@ export function initCases(contentPromise, openDialog) {
     document.getElementById('case-dialog-type').textContent = str(c.type);
     document.getElementById('case-dialog-title').textContent = str(c.title);
     document.getElementById('case-dialog-text').textContent = str(c.text);
-    document.getElementById('case-dialog-img').setAttribute('src', SAFE_IMG.test(str(c.image)) ? c.image : '/assets/img/cases/landing.svg');
+    document.getElementById('case-dialog-img').setAttribute('src', imgSrc(c.image));
     const list = document.getElementById('case-dialog-list');
     list.replaceChildren(...arr(c.details).map((d) => h('li', null, str(d))));
     list.hidden = list.children.length === 0;

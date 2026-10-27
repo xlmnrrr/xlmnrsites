@@ -1,7 +1,5 @@
 User-agent: *
 Allow: /
-Disallow: /admin/
-Disallow: /tools/
-Disallow: /backend/
-
-Sitemap: https://xlmnr.ru/sitemap.xml
+Disallow: /xlmnrsites/admin/
+Disallow: /xlmnrsites/tools/
+Disallow: /xlmnrsites/backend/

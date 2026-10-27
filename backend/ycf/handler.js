@@ -8,7 +8,7 @@ const tls = require('node:tls');
 const crypto = require('node:crypto');
 
 const VK_ENDPOINT = 'https://api.vk.com/method/messages.send';
-const DEFAULT_ORIGINS = 'https://xlmnr.ru http://localhost:8000';
+const DEFAULT_ORIGINS = 'https://xlmnr.ru https://xlmnrrr.github.io http://localhost:8000';
 const DEFAULT_VK_VERSION = '5.199';
 const MAX_BODY = 10 * 1024;
 const LIMITS = { name: [2, 80], contact: [3, 120], message: [0, 2000], page: [0, 300] };

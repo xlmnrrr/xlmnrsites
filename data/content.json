@@ -89,7 +89,7 @@
     "badge": "Пример",
     "items": [
       {
-        "image": "/assets/img/cases/landing.svg",
+        "image": "assets/img/cases/landing.svg",
         "type": "Лендинг",
         "title": "Страница услуги для локального бизнеса",
         "text": "Одна страница: оффер, преимущества, ответы на вопросы и форма заявки.",
@@ -97,7 +97,7 @@
         "service": "Лендинг"
       },
       {
-        "image": "/assets/img/cases/corporate.svg",
+        "image": "assets/img/cases/corporate.svg",
         "type": "Корпоративный сайт",
         "title": "Сайт компании с каталогом услуг",
         "text": "Несколько страниц: услуги, о компании, документы, контакты.",
@@ -105,7 +105,7 @@
         "service": "Корпоративный сайт"
       },
       {
-        "image": "/assets/img/cases/refresh.svg",
+        "image": "assets/img/cases/refresh.svg",
         "type": "Доработка",
         "title": "Обновление существующего сайта",
         "text": "Новый первый экран, адаптив под телефоны и ускорение загрузки.",

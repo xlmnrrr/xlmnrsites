@@ -1,6 +1,6 @@
 // Content editor: reads/writes data/content.json through the GitHub Contents API.
 // The PAT lives only in this browser (localStorage or sessionStorage) and is sent only to api.github.com.
-import { h } from '/assets/js/content.js';
+import { h } from '../assets/js/content.js';
 
 const REPO = 'xlmnrrr/xlmnrsites';
 const PATH = 'data/content.json';
@@ -17,7 +17,7 @@ const LABELS = {
   ctaSecondary: 'Вторая кнопка', note: 'Примечание', services: 'Услуги', kicker: 'Метка раздела', lead: 'Вводный текст',
   items: 'Элементы', icon: 'Иконка (landing / corporate / refine / support)', text: 'Текст', bullets: 'Пункты', price: 'Стоимость',
   term: 'Сроки', service: 'Название услуги для заявки', process: 'Как работаю', cases: 'Кейсы', badge: 'Плашка',
-  image: 'Картинка (путь /assets/img/…)', type: 'Тип', details: 'Что входит', advantages: 'Преимущества', numbers: 'Цифры',
+  image: 'Картинка (путь assets/img/…)', type: 'Тип', details: 'Что входит', advantages: 'Преимущества', numbers: 'Цифры',
   enabled: 'Показывать блок', value: 'Значение', label: 'Подпись', form: 'Форма заявки', submit: 'Текст кнопки',
   success: 'Сообщение об успехе', errorTitle: 'Заголовок ошибки', errorText: 'Текст ошибки', faq: 'Вопросы и ответы',
   botGreeting: 'Приветствие помощника', botNote: 'Пометка помощника', categories: 'Темы', q: 'Вопрос', a: 'Ответ',
@@ -31,7 +31,7 @@ const HINTS = {
 };
 const LONG = new Set(['text', 'lead', 'subtitle', 'note', 'a', 'botGreeting', 'success', 'errorText', 'title']);
 const SECRET = /(vk1\.a\.|ghp_[A-Za-z0-9]{20,}|github_pat_|-----BEGIN|y0_[A-Za-z0-9_-]{20,}|AQVN[A-Za-z0-9_-]{20,})/;
-const SAFE_IMG = /^\/assets\/img\/[\w\-/]+\.(svg|webp|png|jpe?g|avif)$/;
+const SAFE_IMG = /^(\.?\/)?assets\/img\/[\w\-/]+\.(svg|webp|png|jpe?g|avif)$/;
 
 const $ = (id) => document.getElementById(id);
 const state = { token: '', data: null, sha: '', dirty: false, tab: '' };
@@ -134,7 +134,7 @@ function validate(data) {
   if (!/^tel:\+?[\d\-()\s]+$/.test(data.contacts.phoneLink || '')) errors.push('Ссылка на телефон должна быть вида tel:+79871098437.');
   if (!/^mailto:[^\s<>"]+$/.test(data.contacts.emailLink || '')) errors.push('Ссылка на email должна быть вида mailto:адрес.');
   (data.cases?.items || []).forEach((c, i) => {
-    if (c.image && !SAFE_IMG.test(c.image)) errors.push(`Кейс ${i + 1}: картинка должна лежать в /assets/img/…`);
+    if (c.image && !SAFE_IMG.test(c.image)) errors.push(`Кейс ${i + 1}: картинка должна лежать в assets/img/…`);
   });
   const json = JSON.stringify(data);
   if (SECRET.test(json)) errors.push('Похоже, в тексте есть токен или ключ. Секреты нельзя хранить в content.json — он публичный.');

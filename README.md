@@ -7,7 +7,7 @@
 ```
 index.html                 главная (статичный снимок контента для SEO и работы без JS)
 privacy/ consent/ offer/   политика ПДн, согласие, оферта (чистые URL /privacy/ …)
-404.html  CNAME  .nojekyll  robots.txt  sitemap.xml
+404.html  .nojekyll  robots.txt  sitemap.xml
 data/content.json          весь текст, контакты, реквизиты, настройки (formEndpoint, metrikaId)
 admin/                     редактор content.json через GitHub Contents API
 assets/css/main.css        дизайн-система Quiet Design (токены в :root)
@@ -40,9 +40,18 @@ python -m http.server 8000
 
 ## Деплой (GitHub Pages)
 
+Сейчас — превью без своего домена: **https://xlmnrrr.github.io/xlmnrsites/**.
+
 1. `git push` в `main` репозитория `xlmnrrr/xlmnrsites`.
-2. Settings → Pages → Source: *Deploy from a branch*, `main` / root. Custom domain: `xlmnr.ru` (файл `CNAME` уже есть), включить **Enforce HTTPS**.
-3. DNS у регистратора: `A` → `185.199.108.153`, `185.199.109.153`, `185.199.110.153`, `185.199.111.153`; `AAAA` → `2606:50c0:8000::153`, `2606:50c0:8001::153`, `2606:50c0:8002::153`, `2606:50c0:8003::153`; `CNAME www` → `xlmnrrr.github.io`.
+2. Settings → Pages → Source: *Deploy from a branch*, `main` / root.
+
+Все пути относительные (`./assets/…`, `../privacy/` и т. п.), `content.json` и картинки кейсов резолвятся от корня сайта через `import.meta.url`, поэтому сайт работает и в подпапке `/xlmnrsites/`, и в корне домена. Исключение — `404.html`: GitHub отдаёт его по любому адресу, поэтому в нём `<base href="/xlmnrsites/">`.
+
+### Когда подключим xlmnr.ru
+1. Добавить файл `CNAME` с `xlmnr.ru`, в Settings → Pages указать домен и включить **Enforce HTTPS**.
+2. DNS: `A` → `185.199.108.153`, `185.199.109.153`, `185.199.110.153`, `185.199.111.153`; `AAAA` → `2606:50c0:8000::153` … `2606:50c0:8003::153`; `CNAME www` → `xlmnrrr.github.io`.
+3. В `404.html` заменить `<base href="/xlmnrsites/">` на `<base href="/">`.
+4. Заменить `https://xlmnrrr.github.io/xlmnrsites` на `https://xlmnr.ru` в `canonical`/`og:*`/JSON-LD (`index.html`, `privacy/`, `consent/`, `offer/`, `404.html`) и в `sitemap.xml`; в `robots.txt` убрать префикс `/xlmnrsites` и вернуть строку `Sitemap: https://xlmnr.ru/sitemap.xml`.
 
 ## Контент и админка
 
