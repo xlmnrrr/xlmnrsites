@@ -1,9 +1,6 @@
 import { h, get, safeHref } from './content.js';
 
 const TIMEOUT_MS = 15000;
-const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-const PROFILE = /^(https?:\/\/)?(m\.)?(vk\.com|vk\.ru|t\.me)\/[\w.\-]{2,}\/?$/i;
-const HANDLE = /^@[\w.]{3,}$/;
 
 const DEFAULTS = {
   phone: '8 (987) 109-84-37',
@@ -16,10 +13,44 @@ const DEFAULTS = {
   submit: 'Отправить заявку',
 };
 
-function contactValid(v) {
-  if (EMAIL.test(v) || PROFILE.test(v) || HANDLE.test(v)) return true;
-  const digits = v.replace(/\D/g, '');
-  return /^[+\d\s\-()]+$/.test(v) && digits.length >= 10 && digits.length <= 15;
+// Russian phone mask, as on the «Дорожник» site: +7 (900) 123-45-67. A leading 8 becomes +7,
+// anything that is not a digit is dropped, at most 11 digits.
+export function formatPhone(raw) {
+  let d = String(raw).replace(/\D/g, '');
+  if (!d) return '';
+  if (d[0] === '8') d = `7${d.slice(1)}`;
+  else if (d[0] !== '7') d = `7${d}`;
+  d = d.slice(0, 11);
+  let out = '+7';
+  if (d.length > 1) out += ` (${d.slice(1, 4)}`;
+  if (d.length > 4) out += `) ${d.slice(4, 7)}`;
+  if (d.length > 7) out += `-${d.slice(7, 9)}`;
+  if (d.length > 9) out += `-${d.slice(9, 11)}`;
+  return out;
+}
+
+function initPhoneMask(input) {
+  input.addEventListener('input', (e) => {
+    const before = input.value;
+    let digits = before.replace(/\D/g, '');
+    const prev = input.dataset.digits || '';
+    // Typed or pasted with its own 8 / +7 after the ready «+7 (»: that is the country code again.
+    if (prev === '7' && digits === '78') digits = '7';
+    if (digits.length === 12 && digits[0] === '7' && (digits[1] === '7' || digits[1] === '8')) digits = digits.slice(1);
+    // Backspace right after a bracket, space or dash removes the digit before it, not just the sign.
+    if (e.inputType === 'deleteContentBackward' && digits === prev) digits = digits.slice(0, -1);
+    const deleting = Boolean(e.inputType && e.inputType.startsWith('delete'));
+    // only the country code left: keep the ready «+7 (» while typing, clear it when erasing
+    const next = digits.length <= 1 ? (deleting ? '' : '+7 (') : formatPhone(digits);
+    input.value = next;
+    input.dataset.digits = next.replace(/\D/g, '');
+  });
+  input.addEventListener('focus', () => {
+    if (!input.value) { input.value = '+7 ('; input.dataset.digits = '7'; }
+  });
+  input.addEventListener('blur', () => {
+    if (input.value.replace(/\D/g, '').length <= 1) { input.value = ''; input.dataset.digits = ''; }
+  });
 }
 
 const RULES = {
@@ -29,8 +60,8 @@ const RULES = {
     return '';
   },
   contact(v) {
-    if (!v) return 'Укажите телефон, email или ссылку на ВК';
-    if (!contactValid(v)) return 'Проверьте контакт: телефон (10–15 цифр), email или ссылка vk.com/…';
+    if (!v || v.replace(/\D/g, '').length <= 1) return 'Укажите телефон';
+    if (v.replace(/\D/g, '').length !== 11) return 'Введите номер полностью: +7 (900) 123-45-67';
     return '';
   },
   message(v) {
@@ -61,6 +92,7 @@ export function initForm(contentPromise) {
   let busy = false;
   contentPromise.then((d) => { content = d; });
 
+  initPhoneMask(form.elements.contact);
   const text = (key) => get(content, `form.${key}`) || DEFAULTS[key];
   const contact = (key) => get(content, `contacts.${key}`) || DEFAULTS[key];
 
@@ -136,6 +168,7 @@ export function initForm(contentPromise) {
         h('p', { class: 'alert__title' }, text('success')),
       ),
     );
+    document.dispatchEvent(new CustomEvent('xl:lead-sent', { detail: { from: form.querySelector('.form__submit') } }));
   }
 
   form.addEventListener('submit', async (e) => {

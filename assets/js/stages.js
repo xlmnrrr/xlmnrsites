@@ -1,6 +1,7 @@
 // Decides whether Three.js is loaded at all. Weak devices, mobile, save-data and
 // reduced motion get the static poster (hero) and the CSS builder (scene B).
 import { reduceMotion } from './env.js';
+import { preloaderDone } from './fx.js';
 
 function webgl2() {
   try {
@@ -70,7 +71,10 @@ export function initStages() {
       .then((kit) => kit.start({ hero, builder }))
       .catch((err) => console.warn('[3d] disabled:', err));
   };
+  // Three.js (≈0.5 MB, shader compilation) waits until the preloader and the hero intro have played:
+  // compiling during the intro is what made it stutter. The poster image stands in until then.
   const idle = (cb) => ('requestIdleCallback' in window ? requestIdleCallback(cb, { timeout: 2000 }) : setTimeout(cb, 300));
-  if (document.readyState === 'complete') idle(start);
-  else window.addEventListener('load', () => idle(start), { once: true });
+  const loaded = new Promise((r) => (document.readyState === 'complete' ? r() : window.addEventListener('load', r, { once: true })));
+  const skipped = document.documentElement.classList.contains('pl-skip');
+  Promise.all([preloaderDone, loaded]).then(() => setTimeout(() => idle(start), skipped ? 400 : 1600));
 }

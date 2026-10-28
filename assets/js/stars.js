@@ -87,8 +87,11 @@ export function initStars(host) {
         ctx.drawImage(sprite, px - size / 2, py - size / 2, size, size);
         ctx.globalAlpha = 1;
       } else {
-        ctx.fillStyle = `rgba(${s.tint}, ${a.toFixed(3)})`;
+        // one cached colour string per star and a numeric alpha: no new strings every frame
+        ctx.globalAlpha = a;
+        ctx.fillStyle = s.fill || (s.fill = `rgb(${s.tint})`);
         ctx.fillRect(px, py, s.r, s.r);
+        ctx.globalAlpha = 1;
       }
     }
     for (const s of sats) {

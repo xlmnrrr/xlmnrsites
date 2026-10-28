@@ -235,9 +235,12 @@ export const ease = {
 export const clamp01 = (x) => Math.min(1, Math.max(0, x));
 
 /* ---------- stage ---------- */
+const MIN_FRAME_MS = 1000 / 60 - 2;
+
 export class Stage {
   constructor({ preserveDrawingBuffer = false } = {}) {
-    const r = new WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance', preserveDrawingBuffer });
+    // MSAA is wasted work on dense screens: at DPR ≥ 1.5 the pixels are already small enough.
+    const r = new WebGLRenderer({ antialias: (window.devicePixelRatio || 1) < 1.5, alpha: true, powerPreference: 'high-performance', preserveDrawingBuffer });
     r.outputColorSpace = SRGBColorSpace;
     r.toneMapping = ACESFilmicToneMapping;
     r.toneMappingExposure = 1;
@@ -323,6 +326,11 @@ export class Stage {
     const tick = (now) => {
       this.loopId = 0;
       if (!this.active || document.hidden || this.suspended || this.failed) return;
+      // 120/144 Hz screens: draw at most ~60 fps, the scenes are slow and look the same.
+      if (this.last && now - this.last < MIN_FRAME_MS) {
+        this.loopId = requestAnimationFrame(tick);
+        return;
+      }
       const dt = this.last ? now - this.last : 16;
       this.last = now;
       this.frame(now);

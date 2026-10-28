@@ -11,8 +11,41 @@ function anim(tag, attrs) {
   return el;
 }
 
+// Easter egg: five quick clicks on the header logo start a meteor shower over the page.
+function meteorShower() {
+  const sky = document.createElement('div');
+  sky.className = 'meteors';
+  sky.setAttribute('aria-hidden', 'true');
+  for (let i = 0; i < 18; i++) {
+    const m = document.createElement('i');
+    m.style.setProperty('--x', `${(Math.random() * 120 - 10).toFixed(1)}vw`);
+    m.style.setProperty('--y', `${(Math.random() * 45 - 10).toFixed(1)}vh`);
+    m.style.setProperty('--d', `${(Math.random() * 1.6).toFixed(2)}s`);
+    m.style.setProperty('--s', (0.6 + Math.random() * 0.8).toFixed(2));
+    sky.append(m);
+  }
+  document.body.append(sky);
+  setTimeout(() => sky.remove(), 3600);
+}
+
+function initEasterEgg() {
+  const logo = document.querySelector('.header .logo');
+  if (!logo) return;
+  let clicks = [];
+  logo.addEventListener('click', () => {
+    const now = performance.now();
+    clicks = clicks.filter((t) => now - t < 2500);
+    clicks.push(now);
+    if (clicks.length >= 5) {
+      clicks = [];
+      meteorShower();
+    }
+  });
+}
+
 export function initLogos() {
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  initEasterEgg();
   document.querySelectorAll('.logo').forEach((logo) => {
     const comet = logo.querySelector('.logo__comet');
     const sat = logo.querySelector('.logo__sat');

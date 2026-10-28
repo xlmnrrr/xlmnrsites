@@ -16,7 +16,7 @@
   <meta property="og:url" content="https://xlmnrrr.github.io/xlmnrsites/">
   <meta property="og:title" content="XLMNR — создание сайтов в Уфе">
   <meta property="og:description" content="Лендинги, корпоративные сайты, доработка и поддержка. Работаю напрямую, без посредников.">
-  <meta property="og:image" content="https://xlmnrrr.github.io/xlmnrsites/assets/img/og.png">
+  <meta property="og:image" content="https://xlmnrrr.github.io/xlmnrsites/assets/img/og.jpg">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
@@ -25,6 +25,18 @@
   <link rel="stylesheet" href="./assets/css/main.css">
   <script src="./assets/js/boot.js"></script>
   <script type="module" src="./assets/js/app.js"></script>
+  <link rel="modulepreload" href="./assets/js/env.js">
+  <link rel="modulepreload" href="./assets/js/content.js">
+  <link rel="modulepreload" href="./assets/js/nav.js">
+  <link rel="modulepreload" href="./assets/js/form.js">
+  <link rel="modulepreload" href="./assets/js/consent.js">
+  <link rel="modulepreload" href="./assets/js/fx.js">
+  <link rel="modulepreload" href="./assets/js/render.js">
+  <link rel="modulepreload" href="./assets/js/stages.js">
+  <link rel="modulepreload" href="./assets/js/viewer.js">
+  <link rel="modulepreload" href="./assets/js/logo.js">
+  <link rel="modulepreload" href="./assets/js/bot.js">
+  <link rel="modulepreload" href="./assets/js/orbit.js">
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -32,11 +44,12 @@
     "name": "XLMNR",
     "description": "Создание сайтов: лендинги, корпоративные сайты, доработка и поддержка.",
     "url": "https://xlmnrrr.github.io/xlmnrsites/",
-    "image": "https://xlmnrrr.github.io/xlmnrsites/assets/img/og.png",
+    "image": "https://xlmnrrr.github.io/xlmnrsites/assets/img/og.jpg",
     "telephone": "+7-987-109-84-37",
     "email": "makar.ulyanov.02@mail.ru",
     "address": { "@type": "PostalAddress", "addressLocality": "Уфа", "addressCountry": "RU" },
     "areaServed": "Уфа",
+    "priceRange": "от 10 000 ₽",
     "founder": { "@type": "Person", "name": "Ульянов Макар Максимович" }
   }
   </script>
@@ -44,13 +57,18 @@
 <body>
   <div class="preloader" id="preloader" aria-hidden="true">
     <div class="preloader__sparks"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-    <svg class="preloader__mark" viewBox="0 0 32 32" width="132" height="132">
-      <defs><linearGradient id="pl-tail"><stop offset="0" stop-color="#7DD9E2" stop-opacity="0"/><stop offset="1" stop-color="#E6FBFD" stop-opacity=".9"/></linearGradient></defs>
-      <ellipse class="preloader__orbit" cx="16" cy="16" rx="14" ry="6.2" transform="rotate(-28 16 16)" pathLength="1"/>
-      <path class="preloader__x1" d="M9 9l14 14" pathLength="1"/>
-      <path class="preloader__x2" d="M23 9l-5 5M14 18l-5 5" pathLength="1"/>
-      <g transform="rotate(-28 16 16)"><g class="preloader__comet"><path class="preloader__tail" d="M0-1.1L-11 0 0 1.1z"/><circle class="preloader__head" r="1.35"/><animateMotion dur="2.8s" repeatCount="indefinite" rotate="auto" path="M29.1 18.21A14 6.2 0 1 1 2.9 13.79A14 6.2 0 1 1 29.1 18.21"/></g></g>
-    </svg>
+    <div class="preloader__stage">
+      <i class="preloader__halo"></i>
+      <svg class="preloader__mark" viewBox="0 0 32 32" width="132" height="132">
+        <defs><mask id="pl-weave" maskUnits="userSpaceOnUse" x="-4" y="-4" width="40" height="40"><rect x="-4" y="-4" width="40" height="40" fill="#fff"/><path d="M3.64 22.57A14 6.2 -28 0 0 28.6 11.8" fill="none" stroke="#000" stroke-width="3.6"/></mask></defs>
+        <ellipse class="preloader__orbit" cx="16" cy="16" rx="14" ry="6.2" transform="rotate(-28 16 16)" pathLength="1"/>
+        <path class="preloader__x1" d="M9 9l14 14" pathLength="1"/>
+        <path class="preloader__x1w" d="M9 9l14 14" pathLength="1" mask="url(#pl-weave)"/>
+        <path class="preloader__x2" d="M23 9l-5 5M14 18l-5 5" pathLength="1"/>
+        <path class="preloader__front" d="M28.6 11.8A14 6.2 -28 0 1 3.64 22.57" pathLength="1"/>
+      </svg>
+      <div class="preloader__comet"><span class="pl-c"><i></i></span><span class="pl-c"><i></i></span><span class="pl-c"><i></i></span><span class="pl-c"><i></i></span><span class="pl-c"><i></i></span></div>
+    </div>
     <svg class="preloader__word" viewBox="0 0 200 24" width="200" height="24"><text x="100" y="17" text-anchor="middle">XLMNR</text></svg>
   </div>
 
@@ -60,14 +78,14 @@
   <header class="header" id="header" data-intro>
     <div class="container header__inner">
       <a class="logo" href="./" aria-label="XLMNR — на главную" data-scroll-top>
-        <svg class="logo__mark" viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><ellipse class="logo__orbit" cx="16" cy="16" rx="14" ry="6.2" transform="rotate(-28 16 16)" pathLength="1"/><path class="logo__x1" d="M9 9l14 14" pathLength="1"/><path class="logo__x2" d="M23 9l-5 5M14 18l-5 5" pathLength="1"/><circle class="logo__sat" cx="28.6" cy="11.8" r="1.7"/><g transform="rotate(-28 16 16)"><g class="logo__comet" opacity="0"><path class="logo__tail" d="M0-1.2L-9 0 0 1.2z"/><circle class="logo__head" r="1.7"/></g></g></svg>
+        <svg class="logo__mark" viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><ellipse class="logo__orbit" cx="16" cy="16" rx="14" ry="6.2" transform="rotate(-28 16 16)" pathLength="1"/><path class="logo__x1" d="M9 9l14 14" pathLength="1"/><path class="logo__x2" d="M23 9l-5 5M14 18l-5 5" pathLength="1"/><path class="logo__cut" d="M3.64 22.57A14 6.2 -28 0 0 28.6 11.8" pathLength="1"/><path class="logo__front" d="M3.64 22.57A14 6.2 -28 0 0 28.6 11.8" pathLength="1"/><circle class="logo__sat" cx="28.6" cy="11.8" r="1.7"/><g transform="rotate(-28 16 16)"><g class="logo__comet" opacity="0"><path class="logo__tail" d="M0-1.2L-9 0 0 1.2z"/><circle class="logo__head" r="1.7"/></g></g></svg>
         <span class="logo__word">XLMNR</span>
       </a>
       <nav class="nav" aria-label="Основная навигация">
         <button type="button" class="nav__link" data-scroll="services">Услуги</button>
+        <button type="button" class="nav__link" data-scroll="process">Процесс</button>
         <button type="button" class="nav__link" data-scroll="cases">Кейсы</button>
         <button type="button" class="nav__link" data-scroll="advantages">Подход</button>
-        <button type="button" class="nav__link" data-scroll="faq">Вопросы</button>
         <button type="button" class="nav__link" data-scroll="contacts">Контакты</button>
       </nav>
       <div class="header__actions">
@@ -80,9 +98,14 @@
     </div>
   </header>
 
+  <nav class="orbitnav" id="orbitnav" aria-label="Путь по странице">
+    <span class="orbitnav__track" aria-hidden="true"><i class="orbitnav__comet"></i></span>
+    <div class="orbitnav__dots"></div>
+  </nav>
+
   <main id="main" tabindex="-1">
     <section class="hero" id="top" aria-labelledby="hero-title" data-theme="dark">
-      <div class="hero__bg" aria-hidden="true"><div class="aurora"><i></i><i></i><i></i></div><i class="hero__comet"></i><span class="space-sat"></span></div>
+      <div class="hero__bg" aria-hidden="true"><div class="aurora"><i></i><i></i><i></i></div><i class="hero__comet"></i><span class="comets" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span class="space-sat"></span></div>
       <div class="container hero__grid">
         <div class="hero__copy">
           <p class="eyebrow" data-intro-item="150"><span class="eyebrow__dot" aria-hidden="true"></span><span data-c="hero.eyebrow">Веб-разработка · Уфа</span></p>
@@ -98,7 +121,7 @@
               <span class="btn__label" data-c="hero.ctaSecondary">Позвонить</span>
             </a>
           </div>
-          <p class="hero__note" data-c="hero.note" data-intro-item="1550">Стоимость и сроки обсуждаются индивидуально — после короткого разговора о задаче.</p>
+          <p class="hero__note" data-c="hero.note" data-intro-item="1550">Стоимость — от 10 000 ₽. Точную цену и сроки назову после короткого разговора о задаче.</p>
         </div>
         <div class="hero__visual stage" id="hero-stage" aria-hidden="true" data-intro-item="450" data-intro-pop>
           <img class="stage__poster" src="./assets/img/hero-poster@1x.webp" srcset="./assets/img/hero-poster@1x.webp 560w, ./assets/img/hero-poster@2x.webp 1120w" sizes="(min-width: 1024px) 44vw, 92vw" width="560" height="420" alt="" fetchpriority="high" decoding="async">
@@ -107,7 +130,7 @@
     </section>
 
     <section class="section services" id="services" aria-labelledby="services-title" data-theme="dark">
-      <div class="aurora" aria-hidden="true"><i></i><i></i><i></i></div><span class="space-sat" aria-hidden="true"></span>
+      <div class="aurora" aria-hidden="true"><i></i><i></i><i></i></div><span class="comets" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span class="space-sat" aria-hidden="true"></span>
       <div class="container">
         <div class="services__head">
           <div class="section-head">
@@ -133,7 +156,7 @@
             <h3 class="service__title">Лендинги</h3>
             <p class="service__text">Одностраничный сайт под конкретную услугу или предложение: понятная структура, форма заявки, быстрая загрузка.</p>
             <ul class="service__list"><li>Структура и тексты под задачу</li><li>Адаптив под телефоны</li><li>Форма заявки и аналитика</li></ul>
-            <dl class="service__meta"><div><dt>Стоимость</dt><dd>от … ₽, по запросу</dd></div><div><dt>Сроки</dt><dd>обсуждаются индивидуально</dd></div></dl>
+            <dl class="service__meta"><div><dt>Стоимость</dt><dd>от 10 000 ₽</dd></div><div><dt>Сроки</dt><dd>обсуждаются индивидуально</dd></div></dl>
             <button type="button" class="link-btn" data-scroll="request" data-service="Лендинг">Обсудить проект<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
           </article>
           <article class="card service" data-tilt data-reveal>
@@ -141,7 +164,7 @@
             <h3 class="service__title">Корпоративные сайты</h3>
             <p class="service__text">Многостраничный сайт компании: услуги, о компании, контакты, документы. Удобно обновлять содержимое.</p>
             <ul class="service__list"><li>Продуманная навигация</li><li>Страницы услуг и контактов</li><li>Базовая SEO-подготовка</li></ul>
-            <dl class="service__meta"><div><dt>Стоимость</dt><dd>от … ₽, по запросу</dd></div><div><dt>Сроки</dt><dd>обсуждаются индивидуально</dd></div></dl>
+            <dl class="service__meta"><div><dt>Стоимость</dt><dd>от 10 000 ₽</dd></div><div><dt>Сроки</dt><dd>обсуждаются индивидуально</dd></div></dl>
             <button type="button" class="link-btn" data-scroll="request" data-service="Корпоративный сайт">Обсудить проект<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
           </article>
           <article class="card service" data-tilt data-reveal>
@@ -149,7 +172,7 @@
             <h3 class="service__title">Доработка сайтов</h3>
             <p class="service__text">Исправлю вёрстку, ускорю загрузку, добавлю блоки, формы и интеграции на уже работающий сайт.</p>
             <ul class="service__list"><li>Аудит и список правок</li><li>Скорость и адаптив</li><li>Новые блоки и формы</li></ul>
-            <dl class="service__meta"><div><dt>Стоимость</dt><dd>по запросу</dd></div><div><dt>Сроки</dt><dd>зависят от объёма правок</dd></div></dl>
+            <dl class="service__meta"><div><dt>Стоимость</dt><dd>от 10 000 ₽</dd></div><div><dt>Сроки</dt><dd>зависят от объёма правок</dd></div></dl>
             <button type="button" class="link-btn" data-scroll="request" data-service="Доработка сайта">Обсудить проект<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
           </article>
           <article class="card service" data-tilt data-reveal>
@@ -157,7 +180,7 @@
             <h3 class="service__title">Поддержка</h3>
             <p class="service__text">Обновление контента, мелкие правки и контроль работоспособности сайта после запуска.</p>
             <ul class="service__list"><li>Обновление текстов и фото</li><li>Мелкие доработки</li><li>Помощь с доменом и хостингом</li></ul>
-            <dl class="service__meta"><div><dt>Стоимость</dt><dd>по запросу</dd></div><div><dt>Сроки</dt><dd>по договорённости</dd></div></dl>
+            <dl class="service__meta"><div><dt>Стоимость</dt><dd>от 10 000 ₽</dd></div><div><dt>Сроки</dt><dd>по договорённости</dd></div></dl>
             <button type="button" class="link-btn" data-scroll="request" data-service="Поддержка сайта">Обсудить проект<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
           </article>
         </div>
@@ -167,7 +190,7 @@
     <div class="descent" aria-hidden="true">
       <div class="descent__zone" data-header="dark"></div>
       <div class="descent__stars"></div>
-      <i class="descent__comet"></i><span class="space-sat"></span>
+      <i class="descent__comet"></i><span class="comets comets--high" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span class="space-sat"></span>
       <div class="descent__planet"></div>
       <div class="descent__clouds"><i></i><i></i><i></i><i></i><i></i><i></i></div>
     </div>
@@ -196,7 +219,7 @@
         </div>
         <div class="cases__grid" id="cases-list">
           <article class="card case" data-tilt data-reveal>
-            <div class="case__media"><img src="./assets/img/cases/construction.webp" width="640" height="440" loading="lazy" decoding="async" alt=""></div>
+            <div class="case__media"><img src="./assets/img/cases/construction.webp" width="640" height="440" loading="lazy" decoding="async" alt="Превью демо-сайта «Строительство дорог»"></div>
             <span class="badge">Пример</span>
             <div class="case__body">
               <p class="case__type">Лендинг</p>
@@ -206,7 +229,7 @@
             </div>
           </article>
           <article class="card case" data-tilt data-reveal>
-            <div class="case__media"><img src="./assets/img/cases/personal.webp" width="640" height="440" loading="lazy" decoding="async" alt=""></div>
+            <div class="case__media"><img src="./assets/img/cases/personal.webp" width="640" height="440" loading="lazy" decoding="async" alt="Превью демо-сайта «Личный бренд дизайнера»"></div>
             <span class="badge">Пример</span>
             <div class="case__body">
               <p class="case__type">Личный сайт</p>
@@ -216,7 +239,7 @@
             </div>
           </article>
           <article class="card case" data-tilt data-reveal>
-            <div class="case__media"><img src="./assets/img/cases/coffee.webp" width="640" height="440" loading="lazy" decoding="async" alt=""></div>
+            <div class="case__media"><img src="./assets/img/cases/coffee.webp" width="640" height="440" loading="lazy" decoding="async" alt="Превью демо-сайта «Сайт кофейни»"></div>
             <span class="badge">Пример</span>
             <div class="case__body">
               <p class="case__type">Сайт заведения</p>
@@ -246,15 +269,6 @@
       </div>
     </section>
 
-    <section class="section numbers" id="numbers" aria-labelledby="numbers-title" hidden>
-      <div class="container">
-        <div class="section-head">
-          <p class="kicker"><span class="kicker__num">—</span><span data-c="numbers.kicker">Цифры</span></p>
-          <h2 class="h2" id="numbers-title" data-c="numbers.title">В цифрах</h2>
-        </div>
-        <dl class="numbers__grid" id="numbers-list"></dl>
-      </div>
-    </section>
 
     <section class="section request" id="request" aria-labelledby="request-title">
       <div class="container request__grid">
@@ -266,6 +280,11 @@
             <li><a class="contact-link" href="tel:+79871098437" data-c-href="contacts.phoneLink"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M6.6 3.5h2.6l1.5 4-2 1.3a12 12 0 0 0 6.5 6.5l1.3-2 4 1.5v2.6a2 2 0 0 1-2.2 2A17.5 17.5 0 0 1 4.6 5.7a2 2 0 0 1 2-2.2z"/></svg><span data-c="contacts.phone">8 (987) 109-84-37</span></a></li>
             <li><a class="contact-link" href="mailto:makar.ulyanov.02@mail.ru" data-c-href="contacts.emailLink"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 6.5l8.5 6.5 8.5-6.5"/></svg><span data-c="contacts.email">makar.ulyanov.02@mail.ru</span></a></li>
           </ul>
+          <button type="button" class="ask-card" data-open="bot" data-bot-topic="faq" aria-haspopup="dialog">
+            <span class="ask-card__icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-4.5 4v-4A1.5 1.5 0 0 1 4 14.5z"/><path d="M9 8.5h6M9 11.5h4"/></svg></span>
+            <span class="ask-card__body"><span class="ask-card__title">Есть вопрос до заявки?</span><span class="ask-card__text">Помощник ответит про цены, сроки, оплату и права на сайт — сразу, без ожидания.</span></span>
+            <svg class="ask-card__arrow" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </button>
         </div>
         <form class="form card" id="lead-form" novalidate aria-labelledby="request-title">
           <div class="field">
@@ -274,9 +293,9 @@
             <p class="field__error" id="f-name-err"></p>
           </div>
           <div class="field">
-            <label class="field__label" for="f-contact">Телефон, email или ссылка на ВК</label>
-            <input class="field__input" id="f-contact" name="contact" type="text" autocomplete="tel" maxlength="120" required aria-describedby="f-contact-hint f-contact-err">
-            <p class="field__hint" id="f-contact-hint">Как вам удобнее, чтобы я ответил</p>
+            <label class="field__label" for="f-contact">Телефон</label>
+            <input class="field__input" id="f-contact" name="contact" type="tel" inputmode="tel" autocomplete="tel" maxlength="18" required placeholder="+7 (___) ___-__-__" aria-describedby="f-contact-hint f-contact-err">
+            <p class="field__hint" id="f-contact-hint">Перезвоню или напишу в мессенджер на этот номер</p>
             <p class="field__error" id="f-contact-err"></p>
           </div>
           <div class="field">
@@ -302,68 +321,32 @@
       </div>
     </section>
 
-    <section class="section faq" id="faq" aria-labelledby="faq-title">
-      <div class="container faq__grid">
-        <div class="section-head">
-          <p class="kicker"><span class="kicker__num">06</span><span data-c="faq.kicker">Вопросы</span></p>
-          <h2 class="h2" id="faq-title" tabindex="-1" data-split data-c="faq.title">Вопросы и ответы</h2>
-          <p class="lead" data-type data-c="faq.lead">Короткие ответы на частые вопросы. Не нашли свой — задайте его в заявке или по телефону.</p>
-          <button type="button" class="btn btn--ghost" data-open="bot" aria-haspopup="dialog" data-magnetic>
-            <svg class="btn__icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-4.5 4v-4A1.5 1.5 0 0 1 4 14.5z"/></svg>
-            <span class="btn__label">Открыть помощника</span>
-          </button>
-        </div>
-        <div class="faq__body" id="faq-body">
-          <div class="tabs" role="tablist" aria-label="Темы вопросов" id="faq-tabs">
-            <button type="button" class="tab" role="tab" id="faq-t-0" aria-controls="faq-p-0" aria-selected="true">Стоимость и сроки</button>
-            <button type="button" class="tab" role="tab" id="faq-t-1" aria-controls="faq-p-1" aria-selected="false" tabindex="-1">Процесс</button>
-            <button type="button" class="tab" role="tab" id="faq-t-2" aria-controls="faq-p-2" aria-selected="false" tabindex="-1">Технические вопросы</button>
-            <button type="button" class="tab" role="tab" id="faq-t-3" aria-controls="faq-p-3" aria-selected="false" tabindex="-1">Поддержка</button>
-          </div>
-          <div class="faq__panel" role="tabpanel" id="faq-p-0" aria-labelledby="faq-t-0">
-            <details class="qa"><summary class="qa__q">Сколько стоит сайт?</summary><div class="qa__a"><p>Стоимость зависит от объёма: количества страниц, функций, готовности текстов и дизайна. Называю цену после короткого обсуждения задачи — оставьте заявку или позвоните.</p></div></details>
-            <details class="qa"><summary class="qa__q">Сколько времени занимает разработка?</summary><div class="qa__a"><p>Сроки обсуждаются индивидуально и фиксируются до начала работ. Одностраничный сайт, как правило, делается быстрее многостраничного.</p></div></details>
-            <details class="qa"><summary class="qa__q">Как проходит оплата?</summary><div class="qa__a"><p>Я работаю как самозанятый (НПД). Порядок оплаты согласуем заранее, на каждую оплату формируется чек в приложении «Мой налог». Онлайн-оплаты на сайте нет.</p></div></details>
-          </div>
-          <div class="faq__panel" role="tabpanel" id="faq-p-1" aria-labelledby="faq-t-1" hidden>
-            <details class="qa"><summary class="qa__q">С чего начать?</summary><div class="qa__a"><p>Оставьте заявку или позвоните. Я свяжусь, задам несколько вопросов о задаче и предложу формат работы.</p></div></details>
-            <details class="qa"><summary class="qa__q">Нужно ли готовить тексты и фото?</summary><div class="qa__a"><p>Если материалы есть — отлично. Если нет, помогу со структурой и текстами; изображения можно подобрать из фотобанков с подходящей лицензией.</p></div></details>
-            <details class="qa"><summary class="qa__q">Можно ли вносить правки?</summary><div class="qa__a"><p>Да. Порядок и объём правок обсуждаем до старта и фиксируем вместе со стоимостью.</p></div></details>
-          </div>
-          <div class="faq__panel" role="tabpanel" id="faq-p-2" aria-labelledby="faq-t-2" hidden>
-            <details class="qa"><summary class="qa__q">Будет ли сайт удобен на телефоне?</summary><div class="qa__a"><p>Да, вёрстка адаптивная: сайт проверяется на экранах от смартфона до большого монитора.</p></div></details>
-            <details class="qa"><summary class="qa__q">Поможете с доменом и хостингом?</summary><div class="qa__a"><p>Да, помогу выбрать и подключить домен, хостинг и SSL-сертификат. Домен и хостинг оформляются на ваше имя — всё остаётся у вас.</p></div></details>
-            <details class="qa"><summary class="qa__q">Кому принадлежит готовый сайт?</summary><div class="qa__a"><p>Вам. Права на результат работ переходят заказчику после оплаты — это закреплено в оферте.</p></div></details>
-          </div>
-          <div class="faq__panel" role="tabpanel" id="faq-p-3" aria-labelledby="faq-t-3" hidden>
-            <details class="qa"><summary class="qa__q">Что входит в поддержку?</summary><div class="qa__a"><p>Обновление контента, мелкие доработки, контроль работоспособности и помощь с продлением домена и хостинга. Формат и стоимость — по запросу.</p></div></details>
-            <details class="qa"><summary class="qa__q">Можно доработать уже существующий сайт?</summary><div class="qa__a"><p>Да. Сначала посмотрю текущий сайт, составлю список правок и оценку, затем приступлю к работе.</p></div></details>
-            <details class="qa"><summary class="qa__q">Вы работаете только с Уфой?</summary><div class="qa__a"><p>Я нахожусь в Уфе. Удалённый формат работы обсуждаем — большая часть процесса и так проходит онлайн.</p></div></details>
-          </div>
-        </div>
-      </div>
-    </section>
 
     <div class="dusk" aria-hidden="true">
       <div class="dusk__zone" data-header="dark"></div>
       <div class="dusk__clouds"><i></i><i></i><i></i></div>
       <div class="dusk__sun"></div>
-      <div class="dusk__horizon"></div>
+      <div class="dusk__horizon">
+        <div class="dusk__night">
+          <img class="dusk__lights" src="./assets/img/russia-night@1x.webp" srcset="./assets/img/russia-night@1x.webp 1400w, ./assets/img/russia-night@2x.webp 2800w" sizes="max(110vw, 1012px)" width="1400" height="365" alt="" loading="lazy" decoding="async">
+          <span class="dusk__ufa"><i></i><b>Уфа · я здесь</b></span>
+        </div>
+      </div>
       <div class="dusk__stars"></div>
     </div>
 
     <section class="section contacts" id="contacts" aria-labelledby="contacts-title" data-theme="dark">
-      <div class="aurora" aria-hidden="true"><i></i><i></i><i></i></div><span class="space-sat" aria-hidden="true"></span>
+      <div class="aurora" aria-hidden="true"><i></i><i></i><i></i></div><span class="comets" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span class="space-sat" aria-hidden="true"></span>
       <div class="container">
         <div class="contacts__card">
           <div class="section-head">
-            <p class="kicker"><span class="kicker__num">07</span><span data-c="contactsSection.kicker">Контакты</span></p>
+            <p class="kicker"><span class="kicker__num">06</span><span data-c="contactsSection.kicker">Контакты</span></p>
             <h2 class="h2" id="contacts-title" tabindex="-1" data-split data-c="contactsSection.title">Обсудим ваш сайт</h2>
             <p class="lead" data-type data-c="contactsSection.lead">Позвоните, напишите на почту или оставьте заявку — выберите удобный способ.</p>
           </div>
           <dl class="contacts__list">
-            <div class="contacts__item"><dt>Телефон</dt><dd><a class="contacts__big" href="tel:+79871098437" data-c-href="contacts.phoneLink" data-c="contacts.phone">8 (987) 109-84-37</a></dd></div>
-            <div class="contacts__item"><dt>Email</dt><dd><a class="contacts__big contacts__big--mail" href="mailto:makar.ulyanov.02@mail.ru" data-c-href="contacts.emailLink" data-c="contacts.email">makar.ulyanov.02@mail.ru</a></dd></div>
+            <div class="contacts__item"><dt>Телефон</dt><dd class="contacts__value"><a class="contacts__big" href="tel:+79871098437" data-c-href="contacts.phoneLink" data-c="contacts.phone">8 (987) 109-84-37</a><button type="button" class="copy-btn" data-copy aria-label="Скопировать телефон"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M16 8V6.5A2.5 2.5 0 0 0 13.5 4h-7A2.5 2.5 0 0 0 4 6.5v7A2.5 2.5 0 0 0 6.5 16H8"/></svg></button></dd></div>
+            <div class="contacts__item"><dt>Email</dt><dd class="contacts__value"><a class="contacts__big contacts__big--mail" href="mailto:makar.ulyanov.02@mail.ru" data-c-href="contacts.emailLink" data-c="contacts.email">makar.ulyanov.02@mail.ru</a><button type="button" class="copy-btn" data-copy aria-label="Скопировать email"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M16 8V6.5A2.5 2.5 0 0 0 13.5 4h-7A2.5 2.5 0 0 0 4 6.5v7A2.5 2.5 0 0 0 6.5 16H8"/></svg></button></dd></div>
             <div class="contacts__item"><dt>Адрес</dt><dd class="contacts__big" data-c="contacts.city">г. Уфа</dd></div>
           </dl>
           <div class="contacts__actions">
@@ -382,7 +365,7 @@
     <div class="container footer__inner">
       <div class="footer__brand">
         <a class="logo" href="./" aria-label="XLMNR — на главную" data-scroll-top>
-          <svg class="logo__mark" viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><ellipse class="logo__orbit" cx="16" cy="16" rx="14" ry="6.2" transform="rotate(-28 16 16)" pathLength="1"/><path class="logo__x1" d="M9 9l14 14" pathLength="1"/><path class="logo__x2" d="M23 9l-5 5M14 18l-5 5" pathLength="1"/><circle class="logo__sat" cx="28.6" cy="11.8" r="1.7"/><g transform="rotate(-28 16 16)"><g class="logo__comet" opacity="0"><path class="logo__tail" d="M0-1.2L-9 0 0 1.2z"/><circle class="logo__head" r="1.7"/></g></g></svg>
+          <svg class="logo__mark" viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><ellipse class="logo__orbit" cx="16" cy="16" rx="14" ry="6.2" transform="rotate(-28 16 16)" pathLength="1"/><path class="logo__x1" d="M9 9l14 14" pathLength="1"/><path class="logo__x2" d="M23 9l-5 5M14 18l-5 5" pathLength="1"/><path class="logo__cut" d="M3.64 22.57A14 6.2 -28 0 0 28.6 11.8" pathLength="1"/><path class="logo__front" d="M3.64 22.57A14 6.2 -28 0 0 28.6 11.8" pathLength="1"/><circle class="logo__sat" cx="28.6" cy="11.8" r="1.7"/><g transform="rotate(-28 16 16)"><g class="logo__comet" opacity="0"><path class="logo__tail" d="M0-1.2L-9 0 0 1.2z"/><circle class="logo__head" r="1.7"/></g></g></svg>
           <span class="logo__word">XLMNR</span>
         </a>
         <p class="footer__tagline" data-c="footer.tagline">Сайты для бизнеса. Уфа.</p>
@@ -394,7 +377,7 @@
         <button type="button" class="footer__cookie" data-open="cookie-settings" aria-haspopup="dialog">Настройки cookie</button>
       </nav>
       <p class="footer__req">
-        Самозанятый <span data-c="requisites.fullName">Ульянов Макар Максимович</span>, ИНН <span data-c="requisites.inn">уточняется</span> ·
+        Самозанятый <span data-c="requisites.fullName">Ульянов Макар Максимович</span> ·
         <span data-c="requisites.address">г. Уфа</span> ·
         <a href="mailto:makar.ulyanov.02@mail.ru" data-c-href="contacts.emailLink" data-c="contacts.email">makar.ulyanov.02@mail.ru</a> ·
         <a href="tel:+79871098437" data-c-href="contacts.phoneLink" data-c="contacts.phone">8 (987) 109-84-37</a>
@@ -405,7 +388,7 @@
 
   <button type="button" class="bot-fab" data-open="bot" aria-haspopup="dialog" aria-controls="bot" data-magnetic>
     <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-4.5 4v-4A1.5 1.5 0 0 1 4 14.5z"/></svg>
-    <span class="bot-fab__label">Вопросы</span>
+    <span class="bot-fab__label">Спросить</span>
     <i class="bot-fab__halo" aria-hidden="true"></i><i class="bot-fab__shine" aria-hidden="true"></i>
   </button>
 
@@ -449,14 +432,14 @@
   <dialog class="menu" id="menu" aria-label="Меню">
     <div class="menu__inner">
       <div class="menu__head">
-        <span class="logo"><svg class="logo__mark" viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><ellipse class="logo__orbit" cx="16" cy="16" rx="14" ry="6.2" transform="rotate(-28 16 16)" pathLength="1"/><path class="logo__x1" d="M9 9l14 14" pathLength="1"/><path class="logo__x2" d="M23 9l-5 5M14 18l-5 5" pathLength="1"/><circle class="logo__sat" cx="28.6" cy="11.8" r="1.7"/><g transform="rotate(-28 16 16)"><g class="logo__comet" opacity="0"><path class="logo__tail" d="M0-1.2L-9 0 0 1.2z"/><circle class="logo__head" r="1.7"/></g></g></svg><span class="logo__word">XLMNR</span></span>
+        <span class="logo"><svg class="logo__mark" viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><ellipse class="logo__orbit" cx="16" cy="16" rx="14" ry="6.2" transform="rotate(-28 16 16)" pathLength="1"/><path class="logo__x1" d="M9 9l14 14" pathLength="1"/><path class="logo__x2" d="M23 9l-5 5M14 18l-5 5" pathLength="1"/><path class="logo__cut" d="M3.64 22.57A14 6.2 -28 0 0 28.6 11.8" pathLength="1"/><path class="logo__front" d="M3.64 22.57A14 6.2 -28 0 0 28.6 11.8" pathLength="1"/><circle class="logo__sat" cx="28.6" cy="11.8" r="1.7"/><g transform="rotate(-28 16 16)"><g class="logo__comet" opacity="0"><path class="logo__tail" d="M0-1.2L-9 0 0 1.2z"/><circle class="logo__head" r="1.7"/></g></g></svg><span class="logo__word">XLMNR</span></span>
         <button type="button" class="icon-btn" data-close aria-label="Закрыть меню"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
       </div>
       <nav class="menu__nav" aria-label="Мобильная навигация">
         <button type="button" class="menu__link" data-scroll="services">Услуги</button>
+        <button type="button" class="menu__link" data-scroll="process">Процесс</button>
         <button type="button" class="menu__link" data-scroll="cases">Кейсы</button>
         <button type="button" class="menu__link" data-scroll="advantages">Подход</button>
-        <button type="button" class="menu__link" data-scroll="faq">Вопросы</button>
         <button type="button" class="menu__link" data-scroll="contacts">Контакты</button>
       </nav>
       <div class="menu__foot">
@@ -495,12 +478,27 @@
         <span class="bot__avatar" aria-hidden="true"><svg viewBox="0 0 32 32" width="26" height="26"><ellipse cx="16" cy="16" rx="14" ry="6.2" transform="rotate(-28 16 16)"/><path d="M9 9l14 14"/><path class="bot__avatar-x2" d="M23 9l-5 5M14 18l-5 5"/></svg><i class="bot__status"></i></span>
         <div class="bot__who">
           <h2 class="bot__title" id="bot-title">Помощник XLMNR</h2>
-          <p class="bot__note" data-c="faq.botNote">Отвечает по базе знаний сайта — это не нейросеть.</p>
+          <p class="bot__note">онлайн · отвечает сразу</p>
         </div>
+        <button type="button" class="icon-btn" data-bot-reset aria-label="Начать диалог заново"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3M4.5 4.5v3.8h3.8"/></svg></button>
         <button type="button" class="icon-btn" data-close aria-label="Закрыть"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
       </div>
-      <div class="bot__log" id="bot-log" role="log" aria-live="polite"></div>
-      <div class="bot__suggest" id="bot-choices" aria-label="Выберите вопрос"></div>
+      <div class="bot__body">
+        <div class="bot__log" id="bot-log" role="log" aria-live="polite"></div>
+        <div class="bot__scrim" aria-hidden="true"></div>
+        <div class="bot__sheet" id="bot-sheet" role="region" aria-label="Все вопросы" hidden>
+          <form class="bot__search-row" role="search">
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg>
+            <input class="bot__search" id="bot-search" type="search" maxlength="200" autocomplete="off" enterkeyhint="send" placeholder="Найти вопрос или спросить своё…" aria-label="Найти вопрос или задать свой">
+            <button type="button" class="icon-btn" data-sheet-close aria-label="Свернуть список вопросов"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+          </form>
+          <div class="bot__topics" id="bot-topics"></div>
+        </div>
+      </div>
+      <div class="bot__bar">
+        <div class="bot__rail" id="bot-choices" role="group" aria-label="Подсказки"></div>
+        <button type="button" class="bot__all" id="bot-all" aria-expanded="false" aria-controls="bot-sheet"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h9"/></svg><span>Все вопросы</span></button>
+      </div>
     </div>
   </dialog>
   <dialog class="viewer" id="viewer" aria-labelledby="viewer-title">

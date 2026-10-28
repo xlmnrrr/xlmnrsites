@@ -1,6 +1,6 @@
 # xlmnr.ru — сайт самозанятого XLMNR (Уфа, создание сайтов)
 
-Статический сайт на чистом HTML/CSS/JS (без сборщиков и npm). Контент — `data/content.json`, редактируется в `/admin/`. Заявки уходят в Yandex Cloud Function → ВКонтакте (`backend/ycf/`).
+Статический сайт на чистом HTML/CSS/JS (без сборщиков и npm). Два адреса — тестовая копия на GitHub Pages и основной домен, см. [DOMAINS.md](DOMAINS.md). Контент — `data/content.json`, редактируется в `/admin/`. Заявки уходят в Yandex Cloud Function → ВКонтакте (`backend/ycf/`).
 
 ## Структура
 
@@ -18,15 +18,18 @@ assets/js/
   render.js                списки (услуги, кейсы, …) из JSON, диалог кейса
   nav.js                   скролл без #, модалки без прыжков, блокировка прокрутки
   form.js                  валидация, honeypot, отправка, понятные ошибки + телефон/email
-  faq.js                   вкладки, аккордеон, FAQ-помощник (скриптовый, не ИИ)
+  bot.js                   помощник: база вопросов из content.json, шторка «Все вопросы» с поиском,
+                           квиз «Подобрать формат» (ответы уходят в форму), история за сессию
   consent.js               cookie-баннер, Метрика только после «Принять все»
   fx.js                    прелоадер, split text, reveal, магнитные кнопки, tilt, курсор, sticky CTA
   stages.js                решает, грузить ли 3D (гейты), CSS-фолбэк конструктора
   three-kit.js             общий WebGL-рендерер, геометрия, процедурные текстуры
   hero3d.js  scene-b.js    сцены «Стек окон» и «Конструктор страниц»
 assets/vendor/three.custom.min.js   Three.js r160 (MIT), сборка из dorozhnik-site2
-assets/img/                постер hero, OG, иконки, иллюстрации кейсов (SVG)
+assets/img/                постер hero, OG, иконки, кейсы, огни России для планеты над «Контактами»
 tools/poster.html          генератор постера hero (canvas → webp)
+tools/citylights.py        генератор russia-night@{1x,2x}.webp (города, трассы, факелы; python + Pillow)
+tools/icons.py             favicon.svg, apple-touch-icon.png и og.jpg из геометрии логотипа
 backend/ycf/               функция приёма заявок, см. её README
 ```
 
@@ -57,7 +60,7 @@ python -m http.server 8000
 
 `/admin/` → вставить fine-grained PAT (только репозиторий `xlmnrrr/xlmnrsites`, *Contents: Read and write*) → править → «Сохранить на GitHub». Pages пересобирается за 1–2 минуты. Токен хранится только в браузере; при 401/403 админка пишет «Токен истёк/неверный». Секреты в `content.json` админка сохранить не даст.
 
-Что заполнить: `requisites.inn`, цены/сроки в услугах, реальные кейсы, `settings.formEndpoint` (URL функции), `settings.metrikaId`, блок `numbers` — только с реальными данными (`enabled: true`).
+Что заполнить: `requisites.inn` (пока скрыт на сайте), сроки в услугах (цены сейчас «от 10 000 ₽»), реальные кейсы, `settings.formEndpoint` (URL функции), `settings.metrikaId`, блок `numbers` — только с реальными данными (`enabled: true`).
 
 ## 3D
 

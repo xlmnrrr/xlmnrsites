@@ -364,7 +364,13 @@ export function createBuilder(stage, container) {
   inst.activate = () => {
     target = measure();
     lastNow = null;
-    onScroll = () => { target = measure(); };
+    // measured at most once per frame (scroll can fire several times between frames)
+    let queued = false;
+    onScroll = () => {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(() => { queued = false; if (onScroll) target = measure(); });
+    };
     window.addEventListener('scroll', onScroll, { passive: true });
   };
 

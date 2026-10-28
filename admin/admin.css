@@ -13,7 +13,8 @@ code { font-family: Consolas, "SF Mono", Menlo, monospace; font-size: .9em; back
 .panel__actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .auth { display: grid; gap: 14px; max-width: 34rem; }
 .auth__actions { display: flex; flex-wrap: wrap; gap: 10px; }
-.admin-check { display: flex; align-items: center; gap: 10px; font-size: .9375rem; }
+.admin-check { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; font-size: .9375rem; }
+.admin-check__note { flex-basis: 100%; padding-left: 28px; font-size: .8125rem; color: var(--muted); }
 .admin-check input { width: 18px; height: 18px; accent-color: var(--accent); }
 .admin-status:empty { display: none; }
 .admin-status { padding: 12px 16px; border-radius: 12px; font-size: .9375rem; background: var(--surface-2); }

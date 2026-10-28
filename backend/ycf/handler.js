@@ -56,12 +56,14 @@ function rateLimited(ip) {
 const clean = (v) => String(v == null ? '' : v)
   .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '')
   .trim();
+// Name and contact are single-line: a line break there could forge extra «Контакт:» lines in the message.
+const oneLine = (v) => clean(v).replace(/[\r\n\u2028\u2029]+/g, ' ');
 
 function validate(input) {
   if (!input || typeof input !== 'object' || Array.isArray(input)) return { error: 'Некорректный формат заявки' };
   const lead = {
-    name: clean(input.name),
-    contact: clean(input.contact),
+    name: oneLine(input.name),
+    contact: oneLine(input.contact),
     message: clean(input.message),
     page: clean(input.page),
     ts: Number(input.ts) || Date.now(),

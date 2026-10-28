@@ -77,9 +77,44 @@ export function scrollToSection(id) {
   }
 }
 
-function prefillService(name) {
+// Buttons that lead to the form can pre-fill it: the service and a short brief (quiz answers,
+// a question for Makar). Lines written by the site are replaced; the visitor's own text stays.
+const AUTO_LINE = /^(Интересует: |Подбор формата: |Вопрос: )/;
+function prefill(service, brief) {
   const field = document.getElementById('f-message');
-  if (field && name && !field.value.trim()) field.value = `Интересует: ${name}. `;
+  if (!field || (!service && !brief)) return;
+  const own = field.value.split('\n').filter((line) => !AUTO_LINE.test(line)).join('\n').trim();
+  const auto = [service && `Интересует: ${service}.`, brief].filter(Boolean).join('\n');
+  field.value = (own ? `${auto}\n${own}` : `${auto}\n`).slice(0, field.maxLength > 0 ? field.maxLength : 2000);
+}
+
+// A short confirmation at the bottom of the screen (copy to clipboard and similar).
+let toastTimer = 0;
+export function toast(message) {
+  let el = document.getElementById('toast');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'toast';
+    el.className = 'toast';
+    el.setAttribute('role', 'status');
+    document.body.append(el);
+  }
+  el.textContent = message;
+  el.classList.add('is-in');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('is-in'), 2200);
+}
+
+async function copyNear(btn) {
+  const source = btn.parentElement && btn.parentElement.querySelector('a, .contacts__big');
+  const value = source ? source.textContent.trim() : '';
+  if (!value) return;
+  try {
+    await navigator.clipboard.writeText(value);
+    toast(`Скопировано: ${value}`);
+  } catch {
+    toast(value);
+  }
 }
 
 export function initNav() {
@@ -89,8 +124,13 @@ export function initNav() {
   watchDialogs();
 
   document.addEventListener('click', (e) => {
-    const t = e.target.closest('[data-scroll], [data-scroll-top], [data-open], [data-close]');
+    const t = e.target.closest('[data-scroll], [data-scroll-top], [data-open], [data-close], [data-copy]');
     if (!t) return;
+
+    if (t.hasAttribute('data-copy')) {
+      copyNear(t);
+      return;
+    }
 
     if (t.hasAttribute('data-scroll-top')) {
       // Same page (domain root or GitHub Pages subfolder): scroll up instead of reloading.
@@ -104,7 +144,7 @@ export function initNav() {
     }
     if (t.hasAttribute('data-scroll')) {
       e.preventDefault();
-      if (t.dataset.service) prefillService(t.dataset.service);
+      prefill(t.dataset.service, t.dataset.brief);
       scrollToSection(t.dataset.scroll);
       return;
     }
@@ -127,22 +167,33 @@ export function initNav() {
 
   const header = document.getElementById('header');
   if (header) {
-    let ticking = false;
-    const update = () => {
-      ticking = false;
-      header.classList.toggle('is-scrolled', window.scrollY > 8);
-      // Which section sits right under the header bar decides its light/dark variant.
-      // elementsFromPoint skips overlays (preloader, ambient layers) and looks at the page content.
-      const probe = document.elementsFromPoint(window.innerWidth / 2, header.offsetHeight + 2)
-        .find((el) => el.closest('main, footer'));
-      header.classList.toggle('on-dark', Boolean(probe && probe.closest('[data-theme="dark"], [data-header="dark"]')));
+    let scrolled = null;
+    const onScroll = () => {
+      const s = window.scrollY > 8;
+      if (s !== scrolled) header.classList.toggle('is-scrolled', (scrolled = s));
     };
-    const queue = () => {
-      if (!ticking) { ticking = true; requestAnimationFrame(update); }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    // Which section sits right under the header bar decides its light/dark variant. An observer
+    // watches a 2px strip just below the bar, so nothing is measured while scrolling.
+    const dark = new Set();
+    let io = null;
+    const watch = () => {
+      io?.disconnect();
+      dark.clear();
+      const top = header.offsetHeight;
+      io = new IntersectionObserver((entries) => {
+        entries.forEach((en) => (en.isIntersecting ? dark.add(en.target) : dark.delete(en.target)));
+        header.classList.toggle('on-dark', dark.size > 0);
+      }, { rootMargin: `-${top}px 0px -${Math.max(0, window.innerHeight - top - 2)}px 0px` });
+      document.querySelectorAll('main [data-theme="dark"], main [data-header="dark"], footer[data-theme="dark"]').forEach((el) => io.observe(el));
     };
-    window.addEventListener('scroll', queue, { passive: true });
-    window.addEventListener('resize', queue, { passive: true });
-    update();
+    let resizeTimer = 0;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(watch, 150);
+    }, { passive: true });
+    watch();
   }
 
   const year = document.getElementById('year');

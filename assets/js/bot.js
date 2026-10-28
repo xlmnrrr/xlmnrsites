@@ -1,9 +1,10 @@
-// Site assistant: understands free-text questions with a local intent matcher (Russian stemming,
-// synonyms, typo tolerance, dialogue context) and answers from content.json — prices, terms, process,
-// cases, contacts, FAQ. Honest by design: it is a knowledge-base assistant, not a neural network.
+// Site assistant: a guided chat over the site's knowledge base (content.json — prices, terms,
+// process, cases, contacts and the FAQ). Questions come from contextual chips, a topic sheet with
+// search, or a short «pick a format» quiz; typed questions go through a local intent matcher
+// (Russian stemming, synonyms, typo tolerance, dialogue context).
 // Everything the visitor types stays in the browser and is rendered with textContent only.
 import { get, h, safeHref, icon } from './content.js';
-import { reduceMotion } from './env.js';
+import { reduceMotion, finePointer } from './env.js';
 
 /* ---------- text processing ---------- */
 const norm = (s) => String(s).toLowerCase().replace(/ё/g, 'е').replace(/[^a-zа-я0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
@@ -82,7 +83,7 @@ const INTENTS = {
   remote: kw(['удален', 'другом город', 'не из уф', 'москв', 'регион', 'дистанц', 'работаете только', 'город'], 1.2),
   privacy: kw(['персональн', 'конфиденц', 'политик', 'cookie', 'куки', '152', 'мои данные', 'безопасн']),
   tech: kw(['wordpress', 'вордпресс', 'тильд', 'tilda', 'конструктор', 'cms', 'движ', 'битрикс', 'react', 'на чем', 'технологи', 'язык']),
-  speed: kw(['скорость загруз', 'медленн', 'тормоз', 'лага', 'лаги', 'pagespeed', 'оптимизац', 'быстро загруж', 'быстрый сайт']),
+  speed: [...kw(['скорость загруз', 'медленн', 'тормоз', 'лага', 'лаги', 'pagespeed', 'оптимизац', 'быстро загруж', 'быстрый сайт']), ...kw(['сайт быстр', 'сайты быстр'], 1.5)],
   design: kw(['дизайн', 'макет', 'figma', 'фигма', 'стиль', 'красив', 'анимац', '3d', 'трехмерн', 'визуал']),
   help: kw(['что умеешь', 'что ты умеешь', 'что можешь', 'помощь', 'help', 'какие вопросы', 'о чем спросить', 'меню'], 1.4),
   about: kw(['кто вы', 'кто такой', 'кто делает', 'о вас', 'о себе', 'опыт', 'сколько лет', 'макар', 'разработчик', 'команда'], 1.3),
@@ -98,15 +99,22 @@ const INTENTS = {
 };
 const AFFIRM = new Set(['да', 'давай', 'давайте', 'хочу', 'ок', 'окей', 'ага', 'конечно', 'поехали', 'согласен', 'согласна', 'хорошо', 'go', 'да хочу']);
 
-const DEFAULT_SUGGEST = ['Сколько стоит сайт?', 'Какие сроки?', 'Покажи примеры', 'Как проходит работа?', 'Как связаться?'];
-// The assistant offers a fixed set of questions (no free text): every one is answered from content.json.
-const QUESTIONS = ['Сколько стоит сайт?', 'Какие сроки?', 'Какие услуги?', 'Покажи примеры', 'Как проходит работа?',
-  'Как проходит оплата?', 'Что нужно от меня?', 'Чем отличается лендинг от корпоративного?', 'Поможете с доменом и хостингом?',
-  'Кому принадлежит сайт?', 'Что входит в поддержку?', 'Как связаться?'];
+export const DEFAULT_SUGGEST = ['Сколько стоит сайт?', 'Какие сроки?', 'Покажи примеры', 'Как проходит работа?', 'Как связаться?'];
+// The «All questions» sheet. FAQ items from content.json that are not listed here are appended
+// to the topic with the same title (or to a new one), so admin edits show up automatically.
+const TOPICS = [
+  { title: 'Стоимость и сроки', items: ['Сколько стоит сайт?', 'Сколько времени занимает разработка?', 'Как проходит оплата?', 'Бывают ли скидки?'] },
+  { title: 'Услуги и примеры', items: ['Какие услуги?', 'Покажи примеры', 'Чем отличается лендинг от корпоративного?', 'Можно доработать уже существующий сайт?', 'Что входит в поддержку?'] },
+  { title: 'Процесс', items: ['С чего начать?', 'Как проходит работа?', 'Нужно ли готовить тексты и фото?', 'Можно ли вносить правки?'] },
+  { title: 'Технические вопросы', items: ['Будет ли сайт удобен на телефоне?', 'Поможете с доменом и хостингом?', 'Кому принадлежит готовый сайт?', 'На чём делаете сайты?', 'Сайт будет продвигаться в поиске?', 'Смогу сам менять тексты?'] },
+  { title: 'Связь и документы', items: ['Как связаться?', 'Вы работаете только с Уфой?', 'Как быстро ответите?', 'Реквизиты и документы'] },
+];
+// Answers where the assistant's own reply is richer than the FAQ text (lists, examples, contacts).
+const RICH = new Set(['price', 'timing', 'services', 'examples', 'contacts', 'difference', 'requisites']);
 
 /* ---------- engine ---------- */
 export function createBrain(getData) {
-  const ctx = { last: null, service: null, offer: null };
+  const ctx = { last: null, service: null, offer: null, useService: false };
   const d = (path, fallback) => get(getData(), path) ?? fallback;
   const services = () => (d('services.items', []) || []);
   const serviceBy = (key) => services().find((s) => s.icon === key) || null;
@@ -120,8 +128,9 @@ export function createBrain(getData) {
   };
 
   const act = {
-    form: (service, label = 'Оставить заявку') => ({ kind: 'form', label, service }),
+    form: (service, label = 'Оставить заявку', brief) => ({ kind: 'form', label, service, brief }),
     call: () => ({ kind: 'link', label: 'Позвонить', href: d('contacts.phoneLink', 'tel:+79871098437') }),
+    copy: (value, label) => ({ kind: 'copy', label, value }),
     mail: () => ({ kind: 'link', label: 'Написать на почту', href: d('contacts.emailLink', `mailto:${email()}`) }),
     section: (id, label) => ({ kind: 'section', id, label }),
     doc: (href, label) => ({ kind: 'doc', href, label }),
@@ -133,11 +142,11 @@ export function createBrain(getData) {
   const svcLine = (s) => `${s.title} — стоимость ${s.price || 'по запросу'}, сроки ${s.term || 'обсуждаются'}.`;
 
   const answers = {
-    greet: () => ({ text: ['Здравствуйте! Я помощник XLMNR. Подскажу стоимость, сроки, как проходит работа, покажу примеры. Спрашивайте своими словами.'], suggest: DEFAULT_SUGGEST }),
+    greet: () => ({ text: ['Здравствуйте! Я помощник XLMNR. Подскажу стоимость, сроки, как проходит работа, покажу примеры. Выберите вопрос внизу или найдите свой во «Всех вопросах».'], suggest: DEFAULT_SUGGEST }),
     thanks: () => ({ text: ['Пожалуйста! Если появятся вопросы — пишите. А когда будете готовы, оставьте заявку: Макар ответит лично.'], actions: [act.form()], suggest: ['Покажи примеры', 'Как связаться?'] }),
     bye: () => ({ text: ['Хорошего дня! Если что — я здесь, а заявку можно оставить в любой момент.'], actions: [act.form()] }),
-    who: () => ({ text: ['Я автоматический помощник: отвечаю по базе знаний этого сайта — услуги, цены, сроки, документы. Это не нейросеть и не живой человек.', `С живым человеком — Макаром — можно связаться по телефону ${phone()} или через заявку.`], actions: [act.call(), act.form()] }),
-    price: (q) => {
+    who: () => ({ text: ['Я автоматический помощник сайта: отвечаю по базе знаний XLMNR — услуги, цены, сроки, документы.', `С Макаром лично можно связаться по телефону ${phone()} или через заявку.`], actions: [act.call(), act.form()] }),
+    price: () => {
       const s = ctx.useService && ctx.service && serviceBy(ctx.service);
       if (s) {
         ctx.offer = 'form';
@@ -171,7 +180,7 @@ export function createBrain(getData) {
       const ex = exampleActions();
       return { text: [ex.length ? 'Вот демо-сайты — откройте прямо здесь, можно переключить вид «Компьютер / Телефон»:' : 'Примеры собраны в разделе «Кейсы».', 'Это демо для вымышленных компаний — показывают стиль и качество вёрстки.'], actions: ex.length ? ex : [act.section('cases', 'Перейти к кейсам')], suggest: ['Хочу такой же', 'Сколько стоит сайт?'] };
     },
-    contacts: () => ({ text: [`Телефон: ${phone()}`, `Email: ${email()}`, `${d('contacts.city', 'г. Уфа')}. ${d('contacts.replyNote', 'Отвечу в ВК или по телефону')}.`], actions: [act.call(), act.form()] }),
+    contacts: () => ({ text: [`Телефон: ${phone()}`, `Email: ${email()}`, `${d('contacts.city', 'г. Уфа')}. ${d('contacts.replyNote', 'Отвечу в ВК или по телефону')}.`], actions: [act.call(), act.copy(phone(), 'Скопировать телефон'), act.copy(email(), 'Скопировать email'), act.form()] }),
     order: () => {
       ctx.offer = null;
       return { text: ['Отлично! Оставьте заявку: имя, удобный контакт и пару слов о задаче. Макар ответит в ВК или по телефону.'], actions: [act.form(ctx.service ? (serviceBy(ctx.service)?.service) : undefined, 'Перейти к заявке'), act.call()] };
@@ -191,7 +200,7 @@ export function createBrain(getData) {
     admin: () => ({ text: ['К сайту можно подключить простую админку: тексты, цены, контакты и карточки меняются без программиста.'], suggest: ['На чём делаете сайты?', 'Что входит в поддержку?'] }),
     help: () => ({ text: ['Я подскажу по любому базовому вопросу о сайте:'], list: ['стоимость и сроки по каждой услуге', 'как проходит работа и оплата', 'примеры сайтов — открою прямо здесь', 'домен, хостинг, правки, права на сайт', 'контакты и как оставить заявку'], suggest: DEFAULT_SUGGEST }),
     about: () => ({ text: [`Сайты делает ${d('requisites.fullName', 'Макар Ульянов')} — веб-разработчик из Уфы. ${d('requisites.shortName', 'Самозанятый')}: работает напрямую, без посредников и менеджеров.`, 'Посмотрите примеры — по ним видно стиль и качество работы.'], actions: [...exampleActions().slice(0, 1), act.form()], suggest: ['Покажи примеры', 'Как проходит работа?'] }),
-    requisites: () => ({ text: [`${d('requisites.status', 'Самозанятый (НПД)')}: ${d('requisites.fullName', 'Ульянов Макар Максимович')}.`, `ИНН: ${d('requisites.inn', 'уточняется')}. ОГРНИП: ${d('requisites.ogrnip', 'отсутствует')}. ${d('requisites.address', 'г. Уфа')}.`, 'Работа — по публичной оферте, на каждую оплату формируется чек.'], actions: [act.doc('./offer/', 'Открыть оферту')] }),
+    requisites: () => ({ text: [`${d('requisites.status', 'Самозанятый (НПД)')}: ${d('requisites.fullName', 'Ульянов Макар Максимович')}.`, [/^\d{10,12}$/.test(String(d('requisites.inn', ''))) && `ИНН: ${d('requisites.inn', '')}.`, `${d('requisites.address', 'г. Уфа')}.`].filter(Boolean).join(' '), 'Работа — по публичной оферте, на каждую оплату формируется чек.'], actions: [act.doc('./offer/', 'Открыть оферту')] }),
     shop: () => ({ text: ['Интернет-магазин отдельной услугой не указан. Опишите задачу в заявке — Макар скажет, сможет ли помочь и в каком формате лучше сделать (например, лендинг с каталогом и заявкой).'], actions: [act.form('интернет-магазин / каталог', 'Описать задачу')], suggest: ['Какие услуги?', 'Сколько стоит сайт?'] }),
     other: () => ({ text: ['Основная специализация — сайты: лендинги, корпоративные сайты, доработка и поддержка. По другим задачам спросите в заявке — Макар честно скажет, возьмётся ли.'], actions: [act.form()], suggest: ['Какие услуги?'] }),
     discount: () => ({ text: ['Стоимость считается под конкретную задачу, поэтому условия обсуждаются индивидуально. Расскажите о проекте — подберём разумный объём под ваш бюджет.'], actions: [act.form(undefined, 'Обсудить бюджет')], suggest: ['Сколько стоит сайт?'] }),
@@ -204,19 +213,77 @@ export function createBrain(getData) {
     },
     pages: () => ({ text: ['Лендинг — это одна длинная страница. Корпоративный сайт — обычно несколько: главная, услуги, о компании, контакты, документы. Точный состав определим на этапе структуры.'], suggest: ['Чем отличается лендинг от корпоративного?', 'Сколько стоит сайт?'] }),
     fallback: (q) => ({
-      text: ['Точного ответа в моей базе нет — но Макар ответит лично. Задайте вопрос в заявке или позвоните.'],
-      actions: [act.form(`вопрос «${q.slice(0, 80)}»`, 'Задать вопрос в заявке'), act.call()],
+      text: [q ? 'Точного ответа в моей базе нет — но Макар ответит лично. Вопрос уже будет вписан в форму заявки.' : 'Выберите вопрос из списка — или задайте свой в заявке.'],
+      actions: [act.form(undefined, 'Задать вопрос в заявке', q ? `Вопрос: ${q.slice(0, 200)}` : undefined), act.call()],
       suggest: DEFAULT_SUGGEST,
     }),
   };
 
   // FAQ items from content.json are intents too, so admin edits extend what the assistant knows.
-  const faqIntents = () => (d('faq.categories', []) || []).flatMap((c) => (c.items || []).map((it) => ({
-    keys: analyse(it.q).stems.filter((t) => t.length >= 4).map((t) => [t, 0.45]),
-    answer: () => ({ text: [it.a] }),
-  })));
+  // Analysed once per content object, not on every reply.
+  let faqCache = { src: undefined, list: [] };
+  const faqItems = () => {
+    const src = getData();
+    if (faqCache.src !== src) {
+      const list = (d('faq.categories', []) || []).flatMap((c) => (c.items || []).filter((it) => it && it.q && it.a).map((it) => ({
+        n: norm(it.q),
+        a: String(it.a),
+        keys: analyse(it.q).stems.filter((t) => t.length >= 4).map((t) => [t, 0.45]),
+      })));
+      faqCache = { src, list };
+    }
+    return faqCache.list;
+  };
 
-  return function reply(text) {
+  // A question picked from the FAQ list gets the FAQ answer itself, plus the matching intent's
+  // buttons and follow-ups; for rich intents (price list, examples…) the intent's own answer wins.
+  // opts.fresh: a question picked from the topic list is a new question, not a follow-up.
+  function reply(text, opts = {}) {
+    const res = route(text, opts);
+    const exact = faqItems().find((f) => f.n === norm(text));
+    if (!exact || RICH.has(ctx.last)) return res;
+    return { text: [exact.a], actions: res.actions, suggest: res.suggest };
+  }
+
+  // The quiz result: the recommended format with its price, terms and the next step.
+  reply.recommend = (key, summary) => {
+    ctx.service = key;
+    ctx.offer = 'form';
+    const s = serviceBy(key);
+    const why = {
+      landing: 'Одна сильная страница под конкретное предложение: быстро запускается и хорошо собирает заявки с рекламы.',
+      corporate: 'Несколько страниц — о компании, направления, контакты, документы: посетитель сам найдёт всё нужное.',
+      refine: 'Начинать с нуля не нужно: проведу аудит, составлю список правок и ускорю то, что уже есть.',
+      support: 'Возьму сайт на поддержку: обновление контента, мелкие доработки и контроль работоспособности.',
+    }[key] || '';
+    return {
+      text: [`Вам подойдёт: ${s ? (s.service || s.title).toLowerCase() : 'сайт под вашу задачу'}.`, why],
+      list: s ? [`Стоимость: ${s.price || 'по запросу'}`, `Сроки: ${s.term || 'обсуждаются'}`] : [],
+      after: 'Оставьте заявку — ответы из подбора уже будут в форме, останется добавить контакт.',
+      actions: [act.form(s ? (s.service || s.title) : undefined, 'Оставить заявку', summary), ...(key === 'landing' || key === 'corporate' ? exampleActions().slice(0, 1) : [])],
+      suggest: ['Как проходит работа?', 'Как проходит оплата?', 'Покажи примеры'],
+    };
+  };
+
+  reply.topics = () => {
+    const topics = TOPICS.map((t) => ({ title: t.title, items: [...t.items] }));
+    const known = new Set(topics.flatMap((t) => t.items.map(norm)));
+    for (const c of d('faq.categories', []) || []) {
+      for (const it of (c && c.items) || []) {
+        if (!it || !it.q || known.has(norm(it.q))) continue;
+        known.add(norm(it.q));
+        let topic = topics.find((t) => t.title === c.title);
+        if (!topic) topics.push(topic = { title: String(c.title || 'Ещё вопросы'), items: [] });
+        topic.items.push(String(it.q));
+      }
+    }
+    return topics;
+  };
+  reply.greeting = () => d('faq.botGreeting', '') || 'Здравствуйте! Я помощник XLMNR. Подскажу стоимость и сроки, расскажу, как проходит работа, и покажу примеры.';
+
+  return reply;
+
+  function route(text, { fresh = false } = {}) {
     const q = analyse(text);
     if (!q.words.length) return answers.fallback('');
     if (ctx.offer === 'form' && q.words.length <= 3 && q.words.some((w) => AFFIRM.has(w))) return { ...answers.order(), auto: 'form' };
@@ -234,45 +301,106 @@ export function createBrain(getData) {
       if ((id === 'greet' || id === 'thanks' || id === 'bye') && q.words.length > 5) sc *= 0.3;
       if (sc > bestScore) { best = id; bestScore = sc; }
     }
-    const faq = faqIntents().map((f) => ({ f, sc: score(q, f.keys) })).sort((a, b) => b.sc - a.sc)[0];
+    const faq = faqItems().map((f) => ({ f, sc: score(q, f.keys) })).sort((a, b) => b.sc - a.sc)[0];
 
     if (svc) ctx.service = svc;
     // the remembered service applies to short follow-ups («а сроки?»), not to a new general question
-    ctx.useService = Boolean(svc) || (q.words.length <= 4 && !q.n.includes('сайт'));
+    ctx.useService = Boolean(svc) || (!fresh && q.words.length <= 4 && !q.n.includes('сайт'));
     // «а для лендинга?» right after a price/timing answer → repeat that answer for the new service
     if (svc && (!best || bestScore < 1) && (ctx.last === 'price' || ctx.last === 'timing')) best = ctx.last;
     else if (svc && (!best || bestScore < 1)) best = 'service';
 
-    if (!best && faq && faq.sc >= 0.9) { ctx.last = 'faq'; return faq.f.answer(); }
+    if (!best && faq && faq.sc >= 0.9) { ctx.last = 'faq'; return { text: [faq.f.a], suggest: DEFAULT_SUGGEST }; }
     if (!best) { ctx.last = null; return answers.fallback(text); }
     if (best !== 'price' && best !== 'timing' && best !== 'service' && best !== 'order') ctx.offer = null;
     ctx.last = best;
     return answers[best](text);
-  };
+  }
 }
 
 /* ---------- UI ---------- */
+const STORE = 'xlmnr-bot';
+const NUDGE = 'xlmnr-nudge';
+const root = document.documentElement;
+
+// «Pick a format»: a short branching quiz; the answers go into the request form.
+const QUIZ = {
+  site: { q: 'Есть ли у вас сайт сейчас?', options: [
+    { label: 'Нет, нужен новый', next: 'goal' },
+    { label: 'Есть, но устарел или медленный', next: 'fix' },
+    { label: 'Есть, нужна поддержка', result: 'support' },
+  ] },
+  fix: { q: 'Что ближе к задаче?', options: [
+    { label: 'Исправить и ускорить текущий', result: 'refine' },
+    { label: 'Сделать новый с нуля', next: 'goal' },
+  ] },
+  goal: { q: 'Что сайт должен делать в первую очередь?', options: [
+    { label: 'Собирать заявки на одну услугу', score: { landing: 2 }, next: 'size' },
+    { label: 'Рассказывать о компании и направлениях', score: { corporate: 2 }, next: 'size' },
+    { label: 'Пока не знаю — помогите решить', score: { landing: 1, corporate: 1 }, next: 'size' },
+  ] },
+  size: { q: 'Сколько у вас услуг или направлений?', options: [
+    { label: 'Одна-две', score: { landing: 1.5 } },
+    { label: 'Три и больше', score: { corporate: 1.5 } },
+    { label: 'Много, плюс документы или каталог', score: { corporate: 2.5 } },
+  ] },
+};
+
+// What the visitor was looking at when they opened the assistant decides the first chips.
+const CONTEXT = {
+  services: ['Сколько стоит сайт?', 'Какие сроки?', 'Чем отличается лендинг от корпоративного?'],
+  process: ['Как проходит работа?', 'Можно ли вносить правки?', 'Как проходит оплата?'],
+  cases: ['Покажи примеры', 'Хочу такой же', 'Сколько стоит сайт?'],
+  advantages: ['На чём делаете сайты?', 'Кому принадлежит готовый сайт?', 'Сколько стоит сайт?'],
+  request: ['Что нужно от меня?', 'Как быстро ответите?', 'Сколько стоит сайт?'],
+  contacts: ['Как связаться?', 'Как быстро ответите?', 'Вы работаете только с Уфой?'],
+};
+
+function sectionInView() {
+  const el = document.elementsFromPoint(window.innerWidth / 2, window.innerHeight / 2).find((n) => n.closest('main'));
+  return el?.closest('section[id]')?.id || '';
+}
+
 export function initBot(contentPromise, openViewer) {
   const dlg = document.getElementById('bot');
   const log = document.getElementById('bot-log');
   const chips = document.getElementById('bot-choices');
-  if (!dlg || !log || !chips) return;
+  const sheet = document.getElementById('bot-sheet');
+  const allBtn = document.getElementById('bot-all');
+  const search = document.getElementById('bot-search');
+  const topicsEl = document.getElementById('bot-topics');
+  if (!dlg || !log || !chips || !sheet || !allBtn || !search || !topicsEl) return;
   let data = null;
-  contentPromise.then((c) => { data = c; });
   const brain = createBrain(() => data);
+  contentPromise.then((c) => { data = c; if (!sheet.hidden) renderTopics(search.value); });
   let started = false;
   let busy = false;
+  let history = []; // [{ u: 'text' } | { b: res }]
+  let quiz = null;
+  const smooth = () => (reduceMotion.matches ? 'auto' : 'smooth');
 
-  const scrollDown = () => { log.scrollTop = log.scrollHeight; };
-
+  /* ----- messages ----- */
   function actionNode(a) {
     if (a.kind === 'link') {
       const href = safeHref(a.href);
       return href ? h('a', { class: 'bot-act', href }, a.label) : null;
     }
     if (a.kind === 'doc') return h('a', { class: 'bot-act', href: a.href, 'data-viewer': true }, a.label);
-    if (a.kind === 'form') return h('button', { type: 'button', class: 'bot-act bot-act--primary', 'data-scroll': 'request', 'data-service': a.service || null }, a.label);
+    if (a.kind === 'form') return h('button', { type: 'button', class: 'bot-act bot-act--primary', 'data-scroll': 'request', 'data-service': a.service || null, 'data-brief': a.brief || null }, a.label);
     if (a.kind === 'section') return h('button', { type: 'button', class: 'bot-act', 'data-scroll': a.id }, a.label);
+    if (a.kind === 'quiz') {
+      const b = h('button', { type: 'button', class: 'bot-act bot-act--quiz' }, a.label);
+      b.addEventListener('click', startQuiz);
+      return b;
+    }
+    if (a.kind === 'copy') {
+      const b = h('button', { type: 'button', class: 'bot-act' }, a.label);
+      b.addEventListener('click', async () => {
+        try { await navigator.clipboard.writeText(a.value); b.textContent = 'Скопировано ✓'; } catch { b.textContent = a.value; }
+        setTimeout(() => { b.textContent = a.label; }, 1800);
+      });
+      return b;
+    }
     if (a.kind === 'example') {
       const b = h('button', { type: 'button', class: 'bot-act' }, icon('arrow', 14), a.label);
       b.addEventListener('click', () => openViewer({ url: a.url, title: a.title, kind: 'example', service: a.service }, b));
@@ -281,48 +409,310 @@ export function initBot(contentPromise, openViewer) {
     return null;
   }
 
-  function botMessage(res) {
+  function botNode(res, stale = false) {
     const msg = h('div', { class: 'msg msg--bot' });
+    if (res.kicker) msg.append(h('p', { class: 'msg__kicker' }, res.kicker));
     (res.text || []).forEach((t) => msg.append(h('p', null, t)));
     if (res.list && res.list.length) msg.append(h('ul', { class: 'msg__list' }, res.list.map((t) => h('li', null, t))));
     if (res.after) msg.append(h('p', null, res.after));
     const acts = (res.actions || []).map(actionNode).filter(Boolean);
     if (acts.length) msg.append(h('div', { class: 'msg__actions' }, acts));
+    if (res.options) {
+      msg.append(h('div', { class: 'msg__options', role: 'group', 'aria-label': (res.text && res.text[0]) || 'Варианты' },
+        res.options.map((label) => {
+          const b = h('button', { type: 'button', class: 'bot-opt' }, label);
+          if (stale) b.disabled = true;
+          else b.addEventListener('click', () => pickQuiz(label, msg));
+          return b;
+        })));
+    }
+    return msg;
+  }
+
+  // Short answers keep the chat pinned to the bottom; a long one is shown from its first line.
+  function reveal(msg) {
+    const fits = msg.offsetHeight < log.clientHeight - 32;
+    log.scrollTo({ top: fits ? log.scrollHeight : msg.offsetTop - 12, behavior: smooth() });
+  }
+
+  function save() {
+    try { sessionStorage.setItem(STORE, JSON.stringify(history.slice(-60))); } catch { /* storage blocked */ }
+  }
+
+  function postUser(text) {
+    log.append(h('p', { class: 'msg msg--user' }, text));
+    history.push({ u: text });
+    log.scrollTo({ top: log.scrollHeight, behavior: smooth() });
+  }
+
+  function postBot(res) {
+    const { auto, ...plain } = res;
+    const msg = botNode(plain);
     log.append(msg);
-    scrollDown();
-    if (res.auto === 'form') setTimeout(() => acts[0]?.click(), 700);
+    history.push({ b: plain });
+    save();
+    reveal(msg);
+    if (!quiz) setSuggest(res.suggest || DEFAULT_SUGGEST);
+    if (auto === 'form') setTimeout(() => msg.querySelector('.bot-act--primary')?.click(), 700);
   }
 
-  function setSuggest(list) {
-    chips.replaceChildren(...list.map((label) => {
-      const b = h('button', { type: 'button', class: 'chip' }, label);
-      b.addEventListener('click', () => ask(label));
-      return b;
-    }));
+  // The bot «types» for a moment proportional to the answer, then replies.
+  function respond(res, delay) {
+    if (reduceMotion.matches) { postBot(res); return; }
+    busy = true;
+    chips.classList.add('is-busy');
+    log.setAttribute('aria-busy', 'true');
+    const typing = h('div', { class: 'msg msg--bot msg--typing', 'aria-hidden': 'true' }, h('i'), h('i'), h('i'));
+    log.append(typing);
+    log.scrollTo({ top: log.scrollHeight, behavior: smooth() });
+    const words = (res.text || []).join(' ').split(' ').length + (res.list || []).length * 6;
+    setTimeout(() => {
+      typing.remove();
+      busy = false;
+      chips.classList.remove('is-busy');
+      log.removeAttribute('aria-busy');
+      postBot(res);
+    }, delay ?? Math.min(1100, 380 + words * 12));
   }
 
-  function ask(text) {
+  function ask(text, opts) {
     const t = String(text || '').trim().slice(0, 300);
     if (!t || busy) return;
-    busy = true;
-    log.append(h('p', { class: 'msg msg--user' }, t));
-    scrollDown();
-    const res = brain(t);
-    const done = () => { busy = false; botMessage(res); };
-    if (reduceMotion.matches) { done(); return; }
-    const typing = h('p', { class: 'msg msg--bot msg--typing', 'aria-label': 'Печатает…' }, h('i'), h('i'), h('i'));
-    log.append(typing);
-    scrollDown();
-    const words = (res.text || []).join(' ').split(' ').length + (res.list || []).length * 6;
-    setTimeout(() => { typing.remove(); done(); }, Math.min(1100, 380 + words * 12));
+    if (quiz) cancelQuiz(false);
+    closeSheet();
+    postUser(t);
+    respond(brain(t, opts));
   }
 
+  /* ----- chips rail: one row, scrolls sideways, never covers the chat ----- */
+  function setSuggest(list) {
+    const nodes = [];
+    if (quiz) {
+      const b = h('button', { type: 'button', class: 'chip chip--ghost' }, 'Отменить подбор');
+      b.addEventListener('click', () => cancelQuiz(true));
+      nodes.push(b);
+    } else {
+      const q = h('button', { type: 'button', class: 'chip chip--accent' }, 'Подобрать формат');
+      q.addEventListener('click', startQuiz);
+      nodes.push(q);
+      list.slice(0, 4).forEach((label) => {
+        const b = h('button', { type: 'button', class: 'chip' }, label);
+        b.addEventListener('click', () => ask(label));
+        nodes.push(b);
+      });
+    }
+    chips.replaceChildren(...nodes);
+    chips.scrollLeft = 0;
+  }
 
-  dlg.addEventListener('xl:open', () => {
-    document.querySelector('.bot-fab')?.classList.add('is-seen');
-    if (started) return;
-    started = true;
-    botMessage({ text: ['Здравствуйте! Я помощник XLMNR. Подскажу стоимость, сроки, как проходит работа, покажу примеры.', 'Выберите вопрос ниже.'] });
-    setSuggest(QUESTIONS);
+  chips.addEventListener('keydown', (e) => {
+    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+    const all = [...chips.querySelectorAll('button')];
+    const i = all.indexOf(document.activeElement);
+    if (i < 0) return;
+    e.preventDefault();
+    all[(i + (e.key === 'ArrowRight' ? 1 : all.length - 1)) % all.length].focus();
   });
+
+  /* ----- quiz ----- */
+  function startQuiz() {
+    if (busy) return;
+    closeSheet();
+    quiz = { step: 'site', score: { landing: 0, corporate: 0 }, answers: [], n: 1 };
+    postUser('Подобрать формат сайта');
+    setSuggest([]);
+    respond(quizQuestion(), 450);
+  }
+
+  function quizQuestion() {
+    const node = QUIZ[quiz.step];
+    return { kicker: `Подбор формата · вопрос ${quiz.n}`, text: [node.q], options: node.options.map((o) => o.label) };
+  }
+
+  function pickQuiz(label, msg) {
+    if (!quiz || busy) return;
+    const node = QUIZ[quiz.step];
+    const opt = node.options.find((o) => o.label === label);
+    if (!opt) return;
+    msg.querySelectorAll('.bot-opt').forEach((b) => {
+      b.disabled = true;
+      if (b.textContent === label) b.classList.add('is-picked');
+    });
+    quiz.answers.push(`${node.q} — ${label}`);
+    for (const [k, v] of Object.entries(opt.score || {})) quiz.score[k] += v;
+    postUser(label);
+    if (opt.next) {
+      quiz.step = opt.next;
+      quiz.n += 1;
+      respond(quizQuestion(), 420);
+      return;
+    }
+    const key = opt.result || (quiz.score.corporate > quiz.score.landing ? 'corporate' : 'landing');
+    const summary = `Подбор формата: ${quiz.answers.join('; ')}.`;
+    quiz = null;
+    respond(brain.recommend(key, summary), 700);
+  }
+
+  function cancelQuiz(say) {
+    quiz = null;
+    log.querySelectorAll('.bot-opt:not(:disabled)').forEach((b) => { b.disabled = true; });
+    if (say) respond({ text: ['Хорошо, подбор отменён. Чем ещё помочь?'], suggest: DEFAULT_SUGGEST }, 350);
+    else setSuggest(DEFAULT_SUGGEST);
+  }
+
+  /* ----- «all questions» sheet with search ----- */
+  function renderTopics(filter = '') {
+    const words = norm(filter).split(' ').filter((w) => w.length > 1).map(stem);
+    const nodes = [];
+    if (!words.length) {
+      const b = h('button', { type: 'button', class: 'bot-quizcard' },
+        h('span', { class: 'bot-quizcard__title' }, 'Подобрать формат сайта'),
+        h('span', { class: 'bot-quizcard__text' }, '3 коротких вопроса — и я подскажу, что вам подойдёт, со стоимостью и сроками.'));
+      b.addEventListener('click', startQuiz);
+      nodes.push(b);
+    } else {
+      const b = h('button', { type: 'button', class: 'bot-q bot-q--ask' }, `Спросить: «${filter.trim().slice(0, 80)}»`);
+      b.addEventListener('click', () => { const v = search.value; search.value = ''; ask(v); });
+      nodes.push(b);
+    }
+    let found = 0;
+    for (const t of brain.topics()) {
+      const items = words.length ? t.items.filter((q) => words.every((w) => norm(q).includes(w))) : t.items;
+      if (!items.length) continue;
+      found += items.length;
+      nodes.push(h('section', { class: 'bot__topic' },
+        h('h3', { class: 'bot__topic-title' }, t.title),
+        h('div', { class: 'bot__topic-list' }, items.map((q) => {
+          const b = h('button', { type: 'button', class: 'bot-q' }, q);
+          b.addEventListener('click', () => { search.value = ''; ask(q, { fresh: true }); });
+          return b;
+        }))));
+    }
+    if (words.length && !found) nodes.push(h('p', { class: 'bot__empty' }, 'Готового вопроса нет — нажмите «Спросить» или Enter, я поищу ответ в базе знаний.'));
+    topicsEl.replaceChildren(...nodes);
+  }
+
+  function openSheet() {
+    if (sheet.classList.contains('is-open')) return;
+    renderTopics(search.value);
+    sheet.hidden = false;
+    dlg.classList.add('has-sheet');
+    allBtn.setAttribute('aria-expanded', 'true');
+    requestAnimationFrame(() => requestAnimationFrame(() => sheet.classList.add('is-open')));
+    if (finePointer.matches) setTimeout(() => search.focus({ preventScroll: true }), 80);
+  }
+
+  function closeSheet() {
+    if (sheet.hidden) return;
+    sheet.classList.remove('is-open');
+    dlg.classList.remove('has-sheet');
+    allBtn.setAttribute('aria-expanded', 'false');
+    setTimeout(() => { if (!sheet.classList.contains('is-open')) sheet.hidden = true; }, reduceMotion.matches ? 0 : 320);
+  }
+
+  allBtn.addEventListener('click', () => (sheet.classList.contains('is-open') ? closeSheet() : openSheet()));
+  dlg.querySelector('.bot__scrim')?.addEventListener('click', closeSheet);
+  dlg.querySelector('[data-sheet-close]')?.addEventListener('click', () => { closeSheet(); allBtn.focus(); });
+  search.addEventListener('input', () => renderTopics(search.value));
+  search.closest('form')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const v = search.value;
+    search.value = '';
+    ask(v);
+  });
+  // Esc closes the sheet first, the window only on the next press.
+  dlg.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && sheet.classList.contains('is-open')) {
+      e.preventDefault();
+      e.stopPropagation();
+      closeSheet();
+      allBtn.focus();
+    }
+  }, true);
+
+  /* ----- start, restore, reset ----- */
+  function greet(topic) {
+    respond({
+      text: [brain.greeting()],
+      actions: [{ kind: 'quiz', label: 'Подобрать формат сайта' }],
+      suggest: CONTEXT[topic] || DEFAULT_SUGGEST,
+    }, 350);
+  }
+
+  function restore() {
+    let list = null;
+    try { list = JSON.parse(sessionStorage.getItem(STORE) || 'null'); } catch { list = null; }
+    if (!Array.isArray(list) || !list.length) return false;
+    history = list.filter((m) => m && (typeof m.u === 'string' || (m.b && typeof m.b === 'object')));
+    if (!history.length) return false;
+    log.setAttribute('aria-live', 'off');
+    history.forEach((m) => log.append(typeof m.u === 'string' ? h('p', { class: 'msg msg--user' }, m.u) : botNode(m.b, true)));
+    log.setAttribute('aria-live', 'polite');
+    const last = [...history].reverse().find((m) => m.b);
+    setSuggest((last && last.b.suggest) || DEFAULT_SUGGEST);
+    requestAnimationFrame(() => { log.scrollTop = log.scrollHeight; });
+    return true;
+  }
+
+  dlg.querySelector('[data-bot-reset]')?.addEventListener('click', () => {
+    if (busy) return;
+    quiz = null;
+    history = [];
+    try { sessionStorage.removeItem(STORE); } catch { /* ignore */ }
+    log.replaceChildren();
+    closeSheet();
+    greet('');
+  });
+
+  dlg.addEventListener('xl:open', (e) => {
+    document.querySelector('.bot-fab')?.classList.add('is-seen');
+    hideNudge(true);
+    const opener = e.detail && e.detail.opener;
+    const topic = (opener && opener.dataset && opener.dataset.botTopic) || sectionInView();
+    if (!started) {
+      started = true;
+      if (!restore()) greet(topic);
+    } else if (!busy && !quiz && CONTEXT[topic]) {
+      setSuggest(CONTEXT[topic]);
+    }
+    if (topic === 'faq') setTimeout(openSheet, 380);
+  });
+  dlg.addEventListener('close', closeSheet);
+
+  /* ----- one gentle nudge per visit ----- */
+  let nudge = null;
+  function hideNudge(forever) {
+    if (forever) { try { sessionStorage.setItem(NUDGE, '1'); } catch { /* ignore */ } }
+    if (!nudge) return;
+    const n = nudge;
+    nudge = null;
+    n.classList.remove('is-in');
+    setTimeout(() => n.remove(), 400);
+  }
+  function showNudge() {
+    try { if (sessionStorage.getItem(NUDGE)) return; } catch { return; }
+    const fab = document.querySelector('.bot-fab');
+    if (!fab || nudge || started || root.classList.contains('is-locked') || root.classList.contains('cookie-pending')) return;
+    hideNudge(true);
+    const body = h('button', { type: 'button', class: 'bot-nudge__body' },
+      h('span', { class: 'bot-nudge__title' }, 'Подсказать стоимость?'),
+      h('span', { class: 'bot-nudge__text' }, 'Отвечу за пару секунд или подберу формат сайта'));
+    const close = h('button', { type: 'button', class: 'bot-nudge__close', 'aria-label': 'Скрыть подсказку' }, '×');
+    nudge = h('div', { class: 'bot-nudge', role: 'status' }, body, close);
+    body.addEventListener('click', () => fab.click());
+    close.addEventListener('click', () => hideNudge(true));
+    document.body.append(nudge);
+    requestAnimationFrame(() => requestAnimationFrame(() => nudge && nudge.classList.add('is-in')));
+    setTimeout(() => hideNudge(false), 14000);
+  }
+  const cases = document.getElementById('cases');
+  if (cases) {
+    const io = new IntersectionObserver(([en]) => {
+      if (!en.isIntersecting) return;
+      io.disconnect();
+      setTimeout(showNudge, 1600);
+    }, { threshold: 0.3 });
+    io.observe(cases);
+  }
+  setTimeout(showNudge, 45000);
 }

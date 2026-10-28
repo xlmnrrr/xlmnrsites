@@ -22,8 +22,8 @@ const LABELS = {
   term: 'Сроки', service: 'Название услуги для заявки', process: 'Как работаю', cases: 'Кейсы', badge: 'Плашка',
   image: 'Картинка (путь assets/img/…)', url: 'Ссылка на пример (examples/…/index.html или https://…)', type: 'Тип', details: 'Что входит', advantages: 'Преимущества', numbers: 'Цифры',
   enabled: 'Показывать блок', value: 'Значение', label: 'Подпись', form: 'Форма заявки', submit: 'Текст кнопки',
-  success: 'Сообщение об успехе', errorTitle: 'Заголовок ошибки', errorText: 'Текст ошибки', faq: 'Вопросы и ответы',
-  botGreeting: 'Приветствие помощника', botNote: 'Пометка помощника', categories: 'Темы', q: 'Вопрос', a: 'Ответ',
+  success: 'Сообщение об успехе', errorTitle: 'Заголовок ошибки', errorText: 'Текст ошибки', faq: 'Помощник: база вопросов',
+  botGreeting: 'Приветствие помощника', categories: 'Темы вопросов', q: 'Вопрос', a: 'Ответ',
   contactsSection: 'Раздел «Контакты»', write: 'Кнопка «Написать»', footer: 'Подвал', tagline: 'Слоган', version: 'Версия схемы',
 };
 const HINTS = {

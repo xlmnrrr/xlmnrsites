@@ -67,7 +67,7 @@ function caseCard(c, i, badge) {
     ? h('a', { class: 'case__more', href: url, 'data-case': i, 'data-cursor-label': 'Смотреть', 'aria-haspopup': 'dialog' }, 'Смотреть пример', arrow())
     : h('button', { type: 'button', class: 'case__more', 'data-case': i, 'data-cursor-label': 'Смотреть', 'aria-haspopup': 'dialog' }, 'Подробнее', arrow());
   return h('article', { class: 'card case', 'data-tilt': true, 'data-reveal': true },
-    h('div', { class: 'case__media' }, h('img', { src, width: 640, height: 440, loading: 'lazy', decoding: 'async', alt: '' })),
+    h('div', { class: 'case__media' }, h('img', { src, width: 640, height: 440, loading: 'lazy', decoding: 'async', alt: str(c.title) ? `Превью демо-сайта «${str(c.title)}»` : '' })),
     h('span', { class: 'badge' }, badge),
     h('div', { class: 'case__body' },
       h('p', { class: 'case__type' }, str(c.type)),

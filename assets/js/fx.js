@@ -3,43 +3,176 @@ import { reduceMotion, finePointer, isMobile, clamp } from './env.js';
 const root = document.documentElement;
 const desktopFx = () => finePointer.matches && !reduceMotion.matches;
 
-/* ---------- preloader ---------- */
+/* ---------- preloader ----------
+   Sparks converge, the X draws itself, the comet sets off and draws its orbit behind it. On exit the
+   mark fades where it stands while the comet keeps flying: it leaves the orbit with its own speed
+   and direction, curves into the header logo, and the site appears as it arrives. */
 let resolvePreloader;
 export const preloaderDone = new Promise((r) => { resolvePreloader = r; });
+
+const GHOST_LAG = 35; // ms between the dots that form the orbiting comet's tail (main.css, .pl-x)
+const TRAIL = 18; // dots in the flying comet
+const TRAIL_STEP = 9; // ms between them: at speed the tail stretches, like a real comet's
+const DOT = 12; // px, the comet head's own size (.pl-y i, .comet-trail__dot)
 
 function initPreloader() {
   const pl = document.getElementById('preloader');
   if (!pl || root.classList.contains('pl-skip')) { resolvePreloader(); return; }
-  // Stays while the site loads, but at least long enough to see the mark draw itself (2.3 s);
-  // never longer than 4 s — CSS also collapses it on its own at 4 s. The page (and LCP) is
-  // already painted underneath, so this only shapes the reveal.
-  const MIN = reduceMotion.matches ? 600 : 2700;
-  const MAX = 4300;
+  const header = document.querySelector('.header[data-intro]');
+  // Long enough to see the X draw and the comet close its orbit (lap ends at 3.3 s, main.css);
+  // never longer than MAX. The page (and LCP) is painted underneath, so this only shapes the reveal.
+  const MIN = reduceMotion.matches ? 600 : 3600;
+  const MAX = 5000;
   let finished = false;
   const finish = () => {
     if (finished) return;
     finished = true;
-    // Exit: the mark flies into the header logo's place while the dark veil dissolves into the site.
-    const mark = pl.querySelector('.preloader__mark');
-    const logo = document.querySelector('.header .logo__mark');
-    if (mark && logo) {
-      const a = mark.getBoundingClientRect();
-      const b = logo.getBoundingClientRect();
-      const header = document.querySelector('.header[data-intro]');
-      const dy = header && !header.classList.contains('is-in') ? header.offsetHeight : 0;
-      pl.style.setProperty('--fly-x', `${(b.left + b.width / 2 - (a.left + a.width / 2)).toFixed(1)}px`);
-      pl.style.setProperty('--fly-y', `${(b.top + dy + b.height / 2 - (a.top + a.height / 2)).toFixed(1)}px`);
-      pl.style.setProperty('--fly-s', (b.width / a.width).toFixed(3));
+    pl.classList.add('is-leaving');
+    const flight = launchFromOrbit(pl, header);
+    if (!flight) {
+      pl.classList.add('is-revealing');
+      setTimeout(resolvePreloader, 300);
+      setTimeout(() => pl.remove(), 1200);
+      return;
     }
-    pl.classList.add('is-done');
-    setTimeout(resolvePreloader, 520);
-    setTimeout(() => pl.remove(), 1650);
+    // The veil starts to lift while the comet is on its way, so the site is there when it lands.
+    setTimeout(() => pl.classList.add('is-revealing'), flight.duration * 0.66);
+    flight.landed.then(() => {
+      resolvePreloader();
+      landedOnLogo(header);
+      setTimeout(() => pl.remove(), 1000);
+    });
   };
   setTimeout(finish, Math.max(0, MAX - performance.now()));
   const onLoad = () => setTimeout(finish, Math.max(0, MIN - performance.now()));
   if (document.readyState === 'complete') onLoad();
   else window.addEventListener('load', onLoad, { once: true });
 }
+
+const center = (r) => ({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
+
+// Reads where the orbiting comet is right now (its head and the ghosts of its tail) and hands it
+// over to a flying copy at exactly those points, with the speed and direction it had on the orbit.
+function launchFromOrbit(pl, header) {
+  const sat = header && header.querySelector('.logo__sat');
+  const comet = pl.querySelector('.preloader__comet');
+  const dots = comet ? [...comet.querySelectorAll('i')] : [];
+  if (reduceMotion.matches || !sat || dots.length < 2 || !('animate' in Element.prototype)) return null;
+  const samples = dots.map((d) => {
+    const cs = getComputedStyle(d);
+    const m = /matrix\(([-\d.e]+)/.exec(cs.transform);
+    const depth = parseFloat(getComputedStyle(d.parentElement).opacity); // dimmer behind the X
+    return {
+      ...center(d.getBoundingClientRect()),
+      size: DOT * (m ? parseFloat(m[1]) : 1),
+      opacity: (parseFloat(cs.opacity) || 1) * (Number.isNaN(depth) ? 1 : depth),
+    };
+  });
+  const head = samples[0];
+  const t = sat.getBoundingClientRect();
+  if (!t.width || !head.x) return null;
+  const v = { x: (head.x - samples[1].x) * 1000 / GHOST_LAG, y: (head.y - samples[1].y) * 1000 / GHOST_LAG };
+  // trail dots between the measured ghosts are interpolated
+  const at = (ms) => {
+    const f = Math.min(samples.length - 1, ms / GHOST_LAG);
+    const i = Math.min(samples.length - 2, Math.floor(f));
+    const k = f - i;
+    const a = samples[i];
+    const b = samples[i + 1];
+    const mix = (p) => a[p] + (b[p] - a[p]) * k;
+    return { x: mix('x'), y: mix('y'), size: mix('size'), opacity: mix('opacity') };
+  };
+  const trail = Array.from({ length: TRAIL }, (_, i) => ({ lag: i * TRAIL_STEP, ...at(i * TRAIL_STEP) }));
+  header.classList.add('awaits-comet');
+  comet.style.visibility = 'hidden';
+  return flyTrail(trail, v, center(t), t.width);
+}
+
+// The flight: a cubic curve that starts along v and ends heading left into the target. Its timing
+// is a Hermite curve, so the comet leaves at the speed it already had, accelerates and settles
+// softly — no stop at the hand-over, no jump at the end. Every dot repeats the head's path a few ms
+// later, which draws the tail. All motion is WAAPI transform/opacity, on the compositor.
+function flyTrail(trail, v, T, targetSize) {
+  const S = trail[0];
+  const dist = Math.hypot(T.x - S.x, T.y - S.y) || 1;
+  const speed = Math.hypot(v.x, v.y);
+  const dir = speed > 1 ? { x: v.x / speed, y: v.y / speed } : { x: 0, y: -1 };
+  const duration = Math.round(clamp(dist * 1.7, 1150, 1750));
+  const L = dist * 0.42;
+  const P1 = { x: S.x + dir.x * L, y: S.y + dir.y * L };
+  const P2 = { x: T.x + dist * 0.36, y: T.y + dist * 0.06 };
+  const m0 = clamp((speed * duration / 1000) / (3 * L), 0.04, 2.4);
+  const m1 = 0.5;
+  const time = (s) => (-2 * s ** 3 + 3 * s ** 2) + (s ** 3 - 2 * s ** 2 + s) * m0 + (s ** 3 - s ** 2) * m1;
+  const N = 44;
+  const path = [];
+  for (let i = 0; i <= N; i++) {
+    const k = clamp(time(i / N));
+    const u = 1 - k;
+    path.push({
+      p: i / N,
+      x: u * u * u * S.x + 3 * u * u * k * P1.x + 3 * u * k * k * P2.x + k * k * k * T.x,
+      y: u * u * u * S.y + 3 * u * u * k * P1.y + 3 * u * k * k * P2.y + k * k * k * T.y,
+    });
+  }
+  const end = targetSize / DOT;
+  const layer = document.createElement('div');
+  layer.className = 'comet-trail';
+  layer.setAttribute('aria-hidden', 'true');
+  document.body.append(layer);
+
+  let land;
+  const landed = new Promise((r) => { land = r; });
+  trail.forEach((g, i) => {
+    const dot = document.createElement('i');
+    dot.className = 'comet-trail__dot';
+    layer.append(dot);
+    const total = duration + g.lag;
+    const s0 = g.size / DOT;
+    const s1 = end * (g.size / S.size);
+    const frames = [{ offset: 0, transform: `translate(${g.x.toFixed(1)}px, ${g.y.toFixed(1)}px) scale(${s0.toFixed(3)})`, opacity: g.opacity }];
+    path.forEach((pt) => {
+      const sc = s0 + (s1 - s0) * pt.p;
+      frames.push({
+        offset: (g.lag + pt.p * duration) / total,
+        transform: `translate(${pt.x.toFixed(1)}px, ${pt.y.toFixed(1)}px) scale(${sc.toFixed(3)})`,
+        opacity: pt.p >= 1 ? 0 : g.opacity,
+      });
+    });
+    const anim = dot.animate(frames, { duration: total, easing: 'linear', fill: 'forwards' });
+    if (i === 0) anim.finished.then(() => land(), () => land());
+  });
+  setTimeout(() => land(), duration + 500); // a throttled tab must not keep the veil forever
+  landed.then(() => setTimeout(() => layer.remove(), TRAIL * TRAIL_STEP + 300));
+  return { duration, landed };
+}
+
+// The comet becomes the logo's satellite: a flash, then it settles.
+function landedOnLogo(header) {
+  if (!header) return;
+  const logo = header.querySelector('.logo');
+  header.classList.remove('awaits-comet');
+  if (!logo) return;
+  logo.classList.add('is-landed');
+  setTimeout(() => logo.classList.remove('is-landed'), 1300);
+}
+
+// A sent request takes off from the submit button and flies to the logo — «delivered».
+document.addEventListener('xl:lead-sent', (e) => {
+  const btn = e.detail && e.detail.from;
+  const header = document.querySelector('.header');
+  const sat = header && header.querySelector('.logo__sat');
+  if (!btn || !sat || reduceMotion.matches || !('animate' in Element.prototype)) return;
+  const r = btn.getBoundingClientRect();
+  const t = sat.getBoundingClientRect();
+  if (!t.width) return;
+  const S = { x: r.left + r.width * 0.82, y: r.top + r.height / 2 };
+  const trail = Array.from({ length: TRAIL }, (_, i) => ({
+    lag: i * TRAIL_STEP, x: S.x, y: S.y, size: DOT * (1 - (i / TRAIL) * 0.7), opacity: 1 - i / TRAIL,
+  }));
+  header.classList.add('awaits-comet');
+  flyTrail(trail, { x: 160, y: -420 }, center(t), t.width).landed.then(() => landedOnLogo(header));
+});
 
 /* ---------- split text ---------- */
 const CHAR_STEP = 18; // ms between letters — the caret runs at the same pace
@@ -223,6 +356,10 @@ function schedule() {
 
 let magnet = null;
 let tilt = null;
+// Rects are read once when the pointer enters an element (and again after scroll/resize),
+// not on every pointer frame: no layout reads interleaved with the custom-property writes.
+let magnetBox = null;
+let tiltBox = null;
 const cursor = { el: null, dot: null, follow: null, label: null, rx: -100, ry: -100, state: '' };
 
 function frame(now) {
@@ -246,16 +383,18 @@ function updateMagnet() {
       magnet.style.setProperty('--my', '0px');
     }
     magnet = el;
+    magnetBox = null;
     if (magnet) magnet.classList.add('is-magnet');
   }
   if (!magnet) return;
-  const r = magnet.getBoundingClientRect();
-  const ox = parseFloat(magnet.style.getPropertyValue('--mx')) || 0;
-  const oy = parseFloat(magnet.style.getPropertyValue('--my')) || 0;
-  const cx = r.left - ox + r.width / 2;
-  const cy = r.top - oy + r.height / 2;
-  const dx = clamp((pointer.x - cx) / (r.width / 2), -1, 1) * 8;
-  const dy = clamp((pointer.y - cy) / (r.height / 2), -1, 1) * 8;
+  if (!magnetBox) {
+    const r = magnet.getBoundingClientRect();
+    const ox = parseFloat(magnet.style.getPropertyValue('--mx')) || 0;
+    const oy = parseFloat(magnet.style.getPropertyValue('--my')) || 0;
+    magnetBox = { cx: r.left - ox + r.width / 2, cy: r.top - oy + r.height / 2, hw: r.width / 2, hh: r.height / 2 };
+  }
+  const dx = clamp((pointer.x - magnetBox.cx) / magnetBox.hw, -1, 1) * 8;
+  const dy = clamp((pointer.y - magnetBox.cy) / magnetBox.hh, -1, 1) * 8;
   magnet.style.setProperty('--mx', `${dx.toFixed(2)}px`);
   magnet.style.setProperty('--my', `${dy.toFixed(2)}px`);
 }
@@ -273,15 +412,19 @@ function updateTilt() {
       if (st) { st.tx = 0; st.ty = 0; }
     }
     tilt = el;
+    tiltBox = null;
     if (tilt) {
       tilt.classList.add('is-tilting');
       if (!tilts.has(tilt)) tilts.set(tilt, { rx: 0, ry: 0, tx: 0, ty: 0 });
     }
   }
   if (!tilt) return;
-  const r = tilt.getBoundingClientRect();
-  const px = clamp((pointer.x - r.left) / r.width);
-  const py = clamp((pointer.y - r.top) / r.height);
+  if (!tiltBox) {
+    const r = tilt.getBoundingClientRect();
+    tiltBox = { left: r.left, top: r.top, width: r.width, height: r.height };
+  }
+  const px = clamp((pointer.x - tiltBox.left) / tiltBox.width);
+  const py = clamp((pointer.y - tiltBox.top) / tiltBox.height);
   const st = tilts.get(tilt);
   st.ty = (px - 0.5) * 14;
   st.tx = (0.5 - py) * 14;
@@ -379,7 +522,9 @@ function initPointerFx() {
   window.addEventListener('pointerdown', () => cursor.el.classList.add('is-down'), { passive: true });
   window.addEventListener('pointerup', () => cursor.el.classList.remove('is-down'), { passive: true });
   // Content inside scrolled containers moves under a still pointer.
-  window.addEventListener('scroll', () => { if (pointer.target) { pointer.moved = true; schedule(); } }, { passive: true });
+  const invalidate = () => { magnetBox = null; tiltBox = null; };
+  window.addEventListener('scroll', () => { invalidate(); if (pointer.target) { pointer.moved = true; schedule(); } }, { passive: true });
+  window.addEventListener('resize', invalidate, { passive: true });
 }
 
 /* ---------- sticky CTA (mobile) ---------- */
